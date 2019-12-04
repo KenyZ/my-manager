@@ -1,0 +1,26 @@
+body{
+    font-family: $font;
+    font-size: 12px;
+}
+
+*, *:before, *:after{
+    font: inherit
+}
+
+button{
+    cursor: pointer;
+}
+
+html, body, #root, .App{
+    min-height: 100%;
+    height: 100%;
+}
+
+.App{
+    display: flex;
+    flex-direction: column;
+}
+
+.page{
+    flex: auto;
+}

@@ -1,0 +1,24 @@
+.Header{
+    background-color: #222;
+    height: 45px;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+
+    &-username{
+        color: #fff;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    &-logout{
+        color: $danger;
+        font-weight: 600;
+        padding: 8px 20px;
+        margin-left: auto;
+
+        &:hover{
+            text-decoration: underline;
+        }
+    }
+}

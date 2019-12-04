@@ -1,0 +1,41 @@
+{
+  "name": "my-manager",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/KenyZ/my-manager.git",
+  "author": "Keny <zkeny@outlook.fr>",
+  "license": "MIT",
+  "scripts": {
+    "serve": "nodemon --watch server server/server.js",
+    "dev": "npx webpack",
+    "db": "node server/Database/DatabaseSeeder.js"
+  },
+  "dependencies": {
+    "@babel/core": "^7.7.4",
+    "@babel/preset-react": "^7.7.4",
+    "babel-loader": "^8.0.6",
+    "body-parser": "^1.19.0",
+    "css-loader": "^3.2.0",
+    "express": "^4.17.1",
+    "faker": "^4.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.24.0",
+    "mysql2": "^2.0.1",
+    "node-sass": "^4.13.0",
+    "nodemon": "^2.0.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "prop-types": "^15.7.2",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-router-dom": "^5.1.2",
+    "sass-loader": "^8.0.0",
+    "sequelize": "^5.21.2",
+    "sequelize-cli": "^5.5.1",
+    "style-loader": "^1.0.1",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "yup": "^0.27.0"
+  }
+}
