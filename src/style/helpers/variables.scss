@@ -12,6 +12,7 @@ $purple-darker: #2e2675;
 
 $light: #eceff3;
 $light2: #dadada;
+$light3: #bababa;
 
 $success-lighter: #2ecc71;
 $success: #2ecc71;
@@ -30,8 +31,17 @@ $blue: #2483f3;
 
 $radius: 4px;
 $radius2: 8px;
-$rounded: 5rem;
+$rounded: 5em;
 
 
 // COMPONENTS
 $avatar_size: 35px;
+
+// TRANSITIONS
+
+$ease: ease-out;
+
+$duration: 200ms;
+$duration2: 400ms;
+$duration3: 600ms;
+

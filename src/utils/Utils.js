@@ -65,7 +65,10 @@ export const getDiffDate = dateFromDatabase => {
 
     const today = moment()
 
-    let date = moment(dateFromDatabase).add(-1, 'days')
+    // console.log({dateFromDatabase})
+    // MUST GET A CORRECT DATE FORMAT FOR MOMENT
+
+    let date = moment(dateFromDatabase)
     let diffDays = date.diff(today, 'days')
     let diffYears = date.diff(today, 'years')
     let text = ""

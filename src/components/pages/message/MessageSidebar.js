@@ -59,19 +59,24 @@ const MessageSidebar = () => {
                         { !loading && 
                             discussions.map((discussionsItem, discussionsItemIndex) => {
 
-                                const {id, lastMessage} = discussionsItem
+                                const {id, lastMessage, participants} = discussionsItem
                                 const {text, createdAt, author: {avatar, username}} = lastMessage
                                 const createdAtText = Utils.getDiffDate(createdAt)
 
+                                const isOnline = Math.random() > .4
+
                                 return (
-                                    <NavLink to={"/messages/c/" + id} key={"section-list-item-" + id} className="PageMessage-sidebar-section-content-list-item">
+                                    <NavLink to={"/messages/c/" + id} key={"section-list-item-" + id} 
+                                    className={"PageMessage-sidebar-section-content-list-item" + (isOnline ? " online" : "")}>
                                         {lastMessage && (
                                             <React.Fragment>
-                                                <div className="PageMessage-sidebar-section-content-list-item-avatar">
-                                                    <img src={avatar} alt=""/>
+                                                <div 
+                                                    className={"PageMessage-sidebar-section-content-list-item-avatar"}
+                                                >
+                                                    <img src={participants[0].avatar} alt=""/>
                                                 </div>
                                                 <div className="PageMessage-sidebar-section-content-list-item-body">
-                                                    <h4 className="PageMessage-sidebar-section-content-list-item-body-name">{username}</h4>
+                                                    <h4 className={"PageMessage-sidebar-section-content-list-item-body-name" + (isOnline ? " online" : "")}>{participants[0].username}</h4>
                                                     <p className="PageMessage-sidebar-section-content-list-item-body-text">{text}</p>
                                                     <p className="PageMessage-sidebar-section-content-list-item-body-date">{createdAtText}</p>
                                                 </div>

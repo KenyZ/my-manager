@@ -85,7 +85,7 @@ function feedDatabase(){
 
                                     return Promise.all([
                                         createdMessage.setAuthor(author),
-                                        createdMessage.setTarget(target),
+                                        // createdMessage.setTarget(target),
                                         createdMessage.setChat(createdChat),
                                     ])
 

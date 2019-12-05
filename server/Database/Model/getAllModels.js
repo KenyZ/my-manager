@@ -18,7 +18,7 @@ module.exports = (DatabaseInstance, DataTypes) => {
     const {User, Message, Chat, Participant} = models
 
     Message.belongsTo(User, {as: 'author'})
-    Message.belongsTo(User, {as: 'target'})
+    // Message.belongsTo(User, {as: 'target'})
     Message.belongsTo(Chat)
     
     Chat.Messages = Chat.hasMany(Message)

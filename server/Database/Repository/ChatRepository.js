@@ -9,7 +9,7 @@ module.exports = (database, models) => {
 
     return {
 
-        find: (chatId, thisUserId) => {
+        getChat: (chatId, thisUserId) => {
                         
             return Chat.findByPk(chatId, {
                 attributes: ['id'],
@@ -40,7 +40,7 @@ module.exports = (database, models) => {
             })
         },
 
-        findAll: (userId = -1) => {
+        findAllDiscussionsOf: (userId = -1) => {
 
 
             return User.findByPk(userId, {
@@ -51,7 +51,19 @@ module.exports = (database, models) => {
                     {
                         model: Chat,
                         as: 'discussions',
-                        attributes: ['id']
+                        attributes: ['id'],
+                        include: [
+                            {
+                                model: User,
+                                as: 'participants',
+                                attributes: ['id', 'avatar', 'username'],
+                                where: {
+                                    id: {
+                                        [notEqualOperator]: userId
+                                    }
+                                }
+                            }
+                        ]
                     }
                 ]
             }).then(user => {
@@ -60,7 +72,7 @@ module.exports = (database, models) => {
                 }
                 
                 const discussions = user.get('discussions')
-                
+
                 return Promise.all(
                     discussions.map(d => {
 
@@ -94,9 +106,10 @@ module.exports = (database, models) => {
                         
                         return {
                             id: d.get('id'),
+                            participants: d.get('participants'),
                             lastMessage: lastMessage
                         }
-                    })
+                    })  
 
                     return gatherDiscussions
 

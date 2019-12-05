@@ -1,7 +1,9 @@
 import React, {
     useEffect,
     useContext,
-    useState
+    useState,
+    useCallback,
+    useRef
 } from 'react'
 import PropTypes from 'prop-types'
 import {
@@ -75,6 +77,8 @@ const PageChat = () => {
     const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
     const [chat, setChat] = useState(null)
     const [isLoading, setLoading] = useState(true)
+    
+    const messageInput = useRef(null)
 
     const requestChat = () => {
         RequestData.getChat(chatID, appStore.token).then(chat => {
@@ -83,18 +87,67 @@ const PageChat = () => {
     }
 
     const onChangeChat = () => {
+
         setLoading(true)
         setChat(null)
         requestChat()
     }
 
-    useEffect(requestChat, [])
+    const initListScroll = useCallback(node => {
 
+        if(node !== null){
+            const scroll = node.scrollHeight - node.offsetHeight
+            node.scrollTop = scroll + 10
+        }
+
+    }, [chat])
+
+    const setMessagesAsGroups = (chat) => {
+
+        if(chat === null){
+            return null
+        }
+
+        const organizedMessages = Utils.linkBy(chat.messages, (c, p) => {
+
+            let diffMinutes = Math.abs(c.createdAt.date.diff(p.createdAt.date, 'minutes'))
+            return c.isReceived === p.isReceived && diffMinutes < 15
+        })
+
+        return {
+            ...chat,
+            messages: [
+                ...organizedMessages
+            ]
+        }
+    }
+
+    const sendMessage = event => {
+
+        event.preventDefault()
+
+        const text = messageInput.current.value
+        RequestData.createMessage(text, appStore.token, chat).then(createdMessage => {
+
+            messageInput.current.value = ""
+            if(createdMessage){
+                setChat({
+                    ...chat,
+                    messages: [
+                        ...chat.messages,
+                        createdMessage
+                    ]
+                })
+            }
+        })
+    }
+    
     useEffect(() => {
         setLoading(chat === null)
     }, [chat])
 
     useEffect(onChangeChat, [chatID])
+
 
     if(isLoading){
         return <div/>
@@ -103,42 +156,49 @@ const PageChat = () => {
     // CHAT IS DEFINED
 
     const interlocutor = chat.participants[0]
+    const {messages: organizedMessages} = setMessagesAsGroups(chat)
 
     return (
         <div className="PageMessage-chat">
-            <div className="PageMessage-chat-title">
-                <div className="avatar">
-                    <img src={interlocutor.avatar} alt=""/>
+            <div className="PageMessage-chat-lesmessages">
+                <div className="PageMessage-chat-title">
+                    <div className="avatar">
+                        <img src={interlocutor.avatar} alt=""/>
+                    </div>
+                    <h3>{interlocutor.username}</h3>
                 </div>
-                <h3>{interlocutor.username}</h3>
+                <div ref={initListScroll} className="PageMessage-chat-list">
+                    {
+
+                        organizedMessages.map((group, groupIndex) => {
+
+                            if(group instanceof Array){
+                                return (
+                                    <MessageGroup key={"message-item-" + groupIndex} group={group}/>
+                                )
+                            } else {
+
+                                const {author, createdAt, isReceived, text} = group
+                                
+                                return (
+                                    <MessageItem 
+                                        key={"message-item-" + groupIndex}
+                                        author={author}
+                                        isReceived={isReceived}
+                                        createdAt={createdAt}
+                                        text={text}
+                                    />
+                                )
+                            }
+                        })
+                    }
+                </div>
             </div>
-            <div className="PageMessage-chat-list">
-                {
-
-                    chat.messages.map((group, groupIndex) => {
-
-                        if(group instanceof Array){
-                            return (
-                                <MessageGroup key={"message-item-" + groupIndex} group={group}/>
-                            )
-                        } else {
-
-                            const {author, createdAt, isReceived, text} = group
-
-                            
-                            return (
-                                <MessageItem 
-                                    key={"message-item-" + groupIndex}
-                                    author={author}
-                                    isReceived={isReceived}
-                                    createdAt={createdAt}
-                                    text={text}
-                                />
-                            )
-                        }
-                    })
-                }
-            </div>
+                    
+            <form onSubmit={sendMessage} className="PageMessage-chat-write">
+                <input ref={messageInput} className="typetext" type="text" placeholder="type your message"/>
+                <button className="send" type="submit">SEND</button>
+            </form>
         </div>
     )
 }

@@ -23,39 +23,52 @@ const RequestData = {
             const interlocutor = chat.participants[0]
 
             chat.messages = chat.messages.map(message => {
-
                 return {
                     ...message,
                     createdAt: {
                         text: Utils.getDiffDate(message.createdAt),
-                        date: moment(Utils.getDiffDate(message.createdAt))
+                        date: moment(message.createdAt)
                     },
                     isReceived: interlocutor.id === message.author.id
                 }
             })
 
-            
-
-            chat.messages = Utils.linkBy(chat.messages, (c, p) => {
-
-                let diffHours = Math.abs(c.createdAt.date.diff(p.createdAt.date))
-
-                return c.isReceived === p.isReceived && diffHours < 2
-            })
-
-            // chat.messages = chat.messages.map(message => {
-
-            //     return {
-            //         ...message,
-            //         createdAt: Utils.getDiffDate(message.createdAt),
-            //     }
-            // })
-
-            console.log(chat.messages)
-
             return chat
         })
     },
+
+
+    createMessage(text, token, chat){
+
+        return Utils.requestApi('message/create', {
+            body: {
+                token: token,
+                message: {
+                    text
+                },
+                chat: chat.id
+            }
+        }).then(response => {
+
+            if(response.body.error){
+                return
+            }
+
+            const interlocutor = chat.participants[0]
+            let message = response.body.data.message
+
+            message = {
+                ...message,
+                createdAt: {
+                    text: Utils.getDiffDate(message.createdAt),
+                    date: moment(message.createdAt)
+                },
+                isReceived: interlocutor.id === message.author.id
+            }
+
+            return message
+        })
+    }
 
 }
 

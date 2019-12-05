@@ -61,7 +61,33 @@ const needAuth = async (req, res, next) => {
 
 const UserRepository = require('../Database/Repository/UserRepository')(database, models)
 const ChatRepository = require('../Database/Repository/ChatRepository')(database, models)
+const MessageRepository = require('../Database/Repository/MessageRepository')(database, models)
 
+
+router.post('/message/create', async (req, res) => {
+
+    const decodedToken = getTokenFromReq(req)
+    const {chat: chatId, message} = req.body
+
+    if(decodedToken && decodedToken.id){
+        return MessageRepository.create(message.text, decodedToken.id, chatId).then(message => {
+            
+            if(!message){
+                res.locals.response.error = ServerConstants.API_ERROR.MUST_BE_AUTH
+                return
+            }
+
+            res.locals.response.data.message = message
+            res.send(res.locals.response)    
+        })
+    } else {
+        res.locals.response.error = ServerConstants.API_ERROR.MUST_BE_AUTH
+        // return res.send(res.locals.response)    
+    }  
+    
+    return res.send(res.locals.response)
+
+})
 
 router.post('/chat/:chatId', async (req, res) => {
 
@@ -78,7 +104,7 @@ router.post('/chat/:chatId', async (req, res) => {
                 return;
             }
 
-            return ChatRepository.find(chatId, decodedToken.id).then(chat => {
+            return ChatRepository.getChat(chatId, decodedToken.id).then(chat => {
                 res.locals.response.data.chat = chat
                 res.send(res.locals.response)
             })
@@ -98,9 +124,7 @@ router.post('/discussions', async (req, res) => {
     // const decodedToken = {id: 1}
     
     if(decodedToken && decodedToken.id){
-        return ChatRepository.findAll(decodedToken.id).then(chats => {
-
-            console.log('HAS BEEN RECEIVED')
+        return ChatRepository.findAllDiscussionsOf(decodedToken.id).then(chats => {
 
             res.locals.response.data.chats = chats
             res.send(res.locals.response)
