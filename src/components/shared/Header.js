@@ -46,11 +46,20 @@ const Header = () => {
         isLoading(appStore.user === null)
     }, [appStore.user])
 
+    const HeaderUserInfo = () => {
+        return (
+            <React.Fragment>
+                <div className="Header-avatar">
+                    <img src={appStore.user.avatar} alt=""/>
+                </div>
+                <p className="Header-username">@{appStore.user.username}</p>
+            </React.Fragment>
+        )
+    }
+
     return (
         <header className="Header">^
-            {!loading && (
-                <p className="Header-username">@{appStore.user.username}</p>
-            )}
+            {!loading && <HeaderUserInfo/>}
             <button onClick={disconnect} className="Header-logout">LOG OUT</button>
         </header>
     )

@@ -76,9 +76,12 @@ const MessageSidebar = () => {
                                                     <img src={participants[0].avatar} alt=""/>
                                                 </div>
                                                 <div className="PageMessage-sidebar-section-content-list-item-body">
-                                                    <h4 className={"PageMessage-sidebar-section-content-list-item-body-name" + (isOnline ? " online" : "")}>{participants[0].username}</h4>
+                                                    <div className="PageMessage-sidebar-section-content-list-item-body-info">
+                                                        <span className={"PageMessage-sidebar-section-content-list-item-body-name" + (isOnline ? " online" : "")}>{participants[0].username}</span>
+
+                                                        <span className="PageMessage-sidebar-section-content-list-item-body-date">{createdAtText}</span>
+                                                    </div>
                                                     <p className="PageMessage-sidebar-section-content-list-item-body-text">{text}</p>
-                                                    <p className="PageMessage-sidebar-section-content-list-item-body-date">{createdAtText}</p>
                                                 </div>
                                             </React.Fragment>
                                         )}

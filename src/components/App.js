@@ -15,6 +15,7 @@ import ProtectedRoute from './shared/ProtectedRoute'
 import Header from './shared/Header'
 import PageHome from './pages/PageHome'
 
+
 const pagesWithNoHeader = [
     '/login'
 ]

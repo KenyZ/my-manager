@@ -6,7 +6,7 @@ module.exports = (database, models) => {
 
         getInfo: id => {
             return User.findByPk(id, {
-                attributes: ['username']
+                attributes: ['username', 'avatar']
             })
         },
 

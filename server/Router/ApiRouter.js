@@ -64,6 +64,16 @@ const ChatRepository = require('../Database/Repository/ChatRepository')(database
 const MessageRepository = require('../Database/Repository/MessageRepository')(database, models)
 
 
+router.get('/test', async (req, res) => {
+
+    return ChatRepository.test().then(data => {
+
+        res.locals.response.data = data
+        res.send(res.locals.response)
+    })
+
+})
+
 router.post('/message/create', async (req, res) => {
 
     const decodedToken = getTokenFromReq(req)

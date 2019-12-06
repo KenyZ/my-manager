@@ -3,8 +3,9 @@ import {
     SET_TOKEN, 
     LOG_OUT,
     SET_USER,
-    SET_CHATS
-,} from './actions'
+    SET_CHATS,
+
+} from './actions'
 
 export const mainReducer = (state = {}, action) => {
     let nextState
@@ -26,8 +27,7 @@ export const mainReducer = (state = {}, action) => {
             nextState = {
                 ...state,
                 user: {
-                    ...state.user,
-                    username: action.username
+                    ...action.user
                 }
             }
         break;

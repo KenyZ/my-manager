@@ -52,6 +52,9 @@ module.exports = (database, models) => {
                         model: Chat,
                         as: 'discussions',
                         attributes: ['id'],
+                        order: [
+                            ['createdAt', 'DESC'],
+                        ],
                         include: [
                             {
                                 model: User,
@@ -117,6 +120,34 @@ module.exports = (database, models) => {
                 
             })
         },
+
+
+        test(){
+            return User.findByPk(1, {
+
+                // logging: console.log,
+
+                // order: [
+                //     [User.Chat, Message, 'createdAt', 'DESC']
+                // ],
+
+                // include: [
+                //     {
+                //         association: User.Chat,
+                //         separate: false,
+                //         as: 'discussions',
+                //         include: [
+                //             {
+                //                 model: Message,
+                //                 limit: 2,
+                //                 separate: true,
+                //             }
+                //         ]
+                //     }
+                // ]
+
+            })
+        }
     }
 
 }

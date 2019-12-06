@@ -11,6 +11,12 @@
         font-weight: 600;
     }
 
+
+    &-avatar{
+        @include avatar();
+        margin-right: 15px;
+    }
+
     &-logout{
         color: $danger;
         font-weight: 600;

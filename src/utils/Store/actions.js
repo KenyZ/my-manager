@@ -18,11 +18,11 @@ export const logOut = () => {
 }
 
 export const SET_USER = "SET_USER"
-export const setUser = ({username}) => {
+export const setUser = user => {
     
     return {
         type: SET_USER,
-        username
+        user
     }
 }
 
