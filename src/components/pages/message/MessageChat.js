@@ -14,6 +14,7 @@ import moment from 'moment'
 import Utils from '../../../utils/Utils'
 import StoreContext from '../../../utils/Store/StoreContext'
 import RequestData from '../../../utils/RequestData'
+import {useRequestedData} from '../../shared/hooks'
 
 const MessageGroup = ({group}) => {
     
@@ -49,7 +50,10 @@ const MessageItem = ({author, isReceived, createdAt, text}) => {
                 <div className="MessageItem-header-date">{createdAt.text}</div>
             </div>
             <div className="MessageItem-body">
-                <p>{text}</p>
+                <p>
+                    {text}
+                    <span className="date">{createdAt.text}</span>
+                </p>
             </div>
         </div>
     )
@@ -73,25 +77,26 @@ const PageChat = () => {
     // VERIFIER QUE LE CHAT BELONGS TO USER || this.USER is partcipant ?
 
     const {chat: chatID} = useParams()
-
     const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
-    const [chat, setChat] = useState(null)
-    const [isLoading, setLoading] = useState(true)
-    
     const messageInput = useRef(null)
+    const [chat, setChat] = useState(null)
 
-    const requestChat = () => {
-        RequestData.getChat(chatID, appStore.token).then(chat => {
-            setChat(chat)
-        })
+    const fetchChat = () => {
+        return RequestData.getChat(chatID, appStore.token)
     }
 
-    const onChangeChat = () => {
-
-        setLoading(true)
-        setChat(null)
-        requestChat()
+    const receiveChat = chat => {
+        setChat(chat)
     }
+
+    const {isFetching: isFetchingChat} = useRequestedData(fetchChat, receiveChat, [chatID])
+
+    // const onChangeChat = () => {
+
+    //     setLoading(true)
+    //     setChat(null)
+    //     requestChat()
+    // }
 
     const initListScroll = useCallback(node => {
 
@@ -102,10 +107,10 @@ const PageChat = () => {
 
     }, [chat])
 
-    const setMessagesAsGroups = (chat) => {
+    const getMessagesAsGroups = chat => {
 
-        if(chat === null){
-            return null
+        if(chat.messages.length === 0){
+            return []
         }
 
         const organizedMessages = Utils.linkBy(chat.messages, (c, p) => {
@@ -114,12 +119,7 @@ const PageChat = () => {
             return c.isReceived === p.isReceived && diffMinutes < 15
         })
 
-        return {
-            ...chat,
-            messages: [
-                ...organizedMessages
-            ]
-        }
+        return organizedMessages
     }
 
     const sendMessage = event => {
@@ -127,7 +127,7 @@ const PageChat = () => {
         event.preventDefault()
 
         const text = messageInput.current.value
-        RequestData.createMessage(text, appStore.token, chat).then(createdMessage => {
+        RequestData.createMessage(appStore.token, text, chat.contact.id).then(createdMessage => {
 
             messageInput.current.value = ""
             if(createdMessage){
@@ -142,21 +142,17 @@ const PageChat = () => {
         })
     }
     
-    useEffect(() => {
-        setLoading(chat === null)
-    }, [chat])
-
-    useEffect(onChangeChat, [chatID])
+    // useEffect(onChangeChat, [chatID])
 
 
-    if(isLoading){
+    if(isFetchingChat && !chat){
         return <div/>
     }
 
     // CHAT IS DEFINED
 
-    const interlocutor = chat.participants[0]
-    const {messages: organizedMessages} = setMessagesAsGroups(chat)
+    const interlocutor = chat.contact
+    const organizedMessages = getMessagesAsGroups(chat)
 
     return (
         <div className="PageMessage-chat">
@@ -167,7 +163,21 @@ const PageChat = () => {
                     </div>
                     <h3>{interlocutor.username}</h3>
                 </div>
-                <div ref={initListScroll} className="PageMessage-chat-list">
+                {organizedMessages.length === 0 && (
+                    <div className="nomessages">
+                        <div className="nomessages-participants">
+                            <div className="avatar">
+                                <img src={appStore.user.avatar} alt=""/>
+                            </div>
+
+                            <div className="avatar">
+                                <img src={interlocutor.avatar} alt=""/>
+                            </div>
+                        </div>
+                        <p>Say hello to your new contact {interlocutor.username}</p>
+                    </div>
+                )}
+                {organizedMessages.length > 0 && <div ref={initListScroll} className="PageMessage-chat-list">
                     {
 
                         organizedMessages.map((group, groupIndex) => {
@@ -192,11 +202,11 @@ const PageChat = () => {
                             }
                         })
                     }
-                </div>
+                </div>}
             </div>
                     
             <form onSubmit={sendMessage} className="PageMessage-chat-write">
-                <input ref={messageInput} className="typetext" type="text" placeholder="type your message"/>
+                <input ref={messageInput} className="typetext" type="text" placeholder="Type your message"/>
                 <button className="send" type="submit">SEND</button>
             </form>
         </div>

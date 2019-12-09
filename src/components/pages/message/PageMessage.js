@@ -20,9 +20,13 @@ const PageMessage = () => {
             <div className="PageMessage-content">
                 <Switch>
                     <Route exact path={path}>
-                        <div>egregerg</div>
+                        <div className="PageMessage-home">
+                            <div className="welcome">
+                                <h1>Welcome !</h1>
+                            </div>
+                        </div>
                     </Route>
-                    <Route path={path + "/c/:chat"} component={MessageChat}/>
+                    <Route path={path + "/talk/:chat"} component={MessageChat}/>
                     <Route path={path + "/*"} render={() => <Redirect to={path}/>}/>
                 </Switch>
             </div>

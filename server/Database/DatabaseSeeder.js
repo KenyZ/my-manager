@@ -10,6 +10,54 @@ if(database && models){
 
 
     action().finally(() => {
+
+        const {User, Chat, Message} = models
+
+
+
+        // return Promise.all([
+
+        //     User.bulkCreate([
+        //         {
+        //             username: 'harry',
+        //             password: 'houhou',
+        //             avatar: 'ggerge'
+        //         },
+        //         {
+        //             username: 'hehe',
+        //             password: 'houhou',
+        //             avatar: 'ggerge'
+        //         }
+        //     ]).then(users => {
+
+        //         console.log({
+        //             user: {
+        //                 a: users[0].getDiscussions,
+        //                 b: users[0].getDiscussion,
+        //                 c: users[0].getChat,
+        //                 d: users[0].getChats,
+        //             }
+        //         })
+    
+        //         return users[0].addContact(users[1]).then(() => {
+
+        //             return Chat.create({
+
+        //             }).then(chat => {
+        //                 return Promise.all([
+        //                     chat.setParticipants(users),
+        //                 ])
+        //             })
+
+        //         })
+    
+        //     }),
+
+
+
+        // ])
+
+
         console.log('### ALL ENDED ###')
         // process.exit(0)
     })
@@ -131,7 +179,7 @@ function feedDatabase(){
         console.log('WILL FEED')
 
         return User.bulkCreate(
-            Array(20).fill(true).map(_ => {
+            Array(50).fill(true).map(_ => {
                 return {
                     username: faker.internet.userName(), 
                     password: '1234', 
@@ -143,7 +191,7 @@ function feedDatabase(){
             console.log('Users created ' + createdUsers.length)
 
 
-            const generatingPairs = generateUniquePairs(createdUsers, () => faker.random.number(5) + 1).then(generatedPairs => {
+            const generatingPairs = generateUniquePairs(createdUsers, () => faker.random.number(10) + 1).then(generatedPairs => {
 
                 const pairs = generatedPairs.map(([index0, index1]) => {
 
@@ -156,66 +204,59 @@ function feedDatabase(){
                 return pairs
             })
 
-            // const pairs = [
-            //     [createdUsers[0], createdUsers[1]],
-            //     [createdUsers[0], createdUsers[3]],
-
-            //     [createdUsers[1], createdUsers[4]],
-            //     [createdUsers[1], createdUsers[5]],
-            //     [createdUsers[1], createdUsers[2]],
-
-            //     [createdUsers[2], createdUsers[3]],
-            //     [createdUsers[2], createdUsers[4]],
-
-            //     [createdUsers[3], createdUsers[1]],
-            // ]
-
             return generatingPairs.then(pairs => {
-
-                // console.log({pairs})
                 
 
-                return Promise.all(
+                return Promise.all([
                     pairs.map(pairsItem => {
     
-                        return Chat.create({}).then(createdChat => {
-    
-                            return createdChat.setParticipants(pairsItem).then(() => {
-    
-                                const nMessages = faker.random.number(10) + 1
-    
-                                return Promise.all(Array(nMessages).fill(true).map((_, i) => {
-    
-                                    let index1 = Math.random() > .5 ? 1 : 0
-                                    let author = pairsItem[index1]
-                                    let target = pairsItem[index1 === 0 ? 1 : 0]
-    
-                                    let randDays = faker.random.number(10) + 1
-                                    let randHours = faker.random.number(23) + 1
-    
-                                    let createdAt = moment().add(-randHours, 'hours').add(-randDays, 'days').format("YYYY-MM-DD HH:mm:ss")
-    
-                                    return Message.create({
-                                        text: faker.lorem.sentences(3),
-                                        createdAt: createdAt
-                                    }).then(createdMessage => {
-    
-                                        return Promise.all([
-                                            createdMessage.setAuthor(author),
-                                            // createdMessage.setTarget(target),
-                                            createdMessage.setChat(createdChat),
-                                        ])
-    
+                        return Promise.all(
+                            [
+
+                                pairsItem[0].addContact(pairsItem[1]),
+                                pairsItem[1].addContact(pairsItem[0]),
+
+                                (Math.random() > .3 && (Chat.create({}).then(createdChat => {
+        
+                                    return createdChat.setParticipants(pairsItem).then(() => {
+            
+                                        const nMessages = faker.random.number(30) + 1
+            
+                                        return Promise.all(Array(nMessages).fill(true).map((_, i) => {
+            
+                                            let index1 = Math.random() > .5 ? 1 : 0
+                                            let author = pairsItem[index1]
+                                            let target = pairsItem[index1 === 0 ? 1 : 0]
+            
+                                            let randDays = faker.random.number(10) + 1
+                                            let randHours = faker.random.number(23) + 1
+            
+                                            let createdAt = moment().add(-randHours, 'hours').add(-randDays, 'days').format("YYYY-MM-DD HH:mm:ss")
+            
+                                            return Message.create({
+                                                text: faker.lorem.sentences(3),
+                                                createdAt: createdAt
+                                            }).then(createdMessage => {
+            
+                                                return Promise.all([
+                                                    createdMessage.setAuthor(author),
+                                                    // createdMessage.setTarget(target),
+                                                    createdMessage.setChat(createdChat),
+                                                ])
+            
+                                            })
+            
+                                        }))
+                                        
                                     })
-    
+            
                                 }))
-                                
-                            })
-    
-                        })
+                                )
+                            ].filter(promise => typeof promise !== "undefined")
+                        )
     
                     })
-                )
+                ])
             })
         })
     }

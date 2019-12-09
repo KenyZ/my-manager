@@ -1,18 +1,18 @@
 const RepositoryHelper = {
 
-    retrieveMessage: ({Message = null, User = null}) => (
-        {
-            model: Message,
-            attributes: ['id', 'text', 'createdAt'],
-            include: [
-                {
-                    model: User,
-                    as: 'author',
-                    attributes: ['id', 'username', 'avatar']
-                }
-            ]
-        }
-    )
+    retrieveMessage: MessageModel => ({
+        id: MessageModel.get('id'),
+        createdAt: MessageModel.get('createdAt'),
+        text: MessageModel.get('text'),
+        author: MessageModel.get('author'),
+    }),
+
+
+    retrieveUser: UserModel => ({
+        id: UserModel.get('id'),
+        username: UserModel.get('username'),
+        avatar: UserModel.get('avatar'),
+    }),
 
 }
 

@@ -5,50 +5,87 @@ import React, {
     useContext
 } from 'react'
 import {
-    NavLink
+    NavLink,
+    Link
 } from 'react-router-dom'
 import moment from 'moment'
 
-window.moment = moment
-
 import StoreContext from '../../../utils/Store/StoreContext'
-import {setChats} from '../../../utils/Store/actions'
 import Utils from '../../../utils/Utils'
+import RequestData from '../../../utils/RequestData'
+import {useRequestedData} from '../../shared/hooks'
 
-const data = [
-    {id:0, avatar: 'https://picsum.photos/id/10/300/300', name: 'Alice Kennedy', content: 'Lorem ipsum dolor, sit amet consectetur adipisicing elit. Laborum maxime consectetur ab. Itaque, eos deleniti.', created_at: new Date('Tue Nov 26 2019')},
-    {id: 1, avatar: 'https://picsum.photos/id/20/300/300', name: 'Toony montana', content: 'Lorem ipsum dolor, sit amet consectetur adipisicing elit. Laborum maxime consectetur ab. Itaque, eos deleniti.', created_at: new Date('Tue Nov 26 2019')},
-    {id: 2, avatar: 'https://picsum.photos/id/30/300/300', name: 'Kevin doms', content: 'Lorem ipsum dolor, sit amet consectetur adipisicing elit. Laborum maxime consectetur ab. Itaque, eos deleniti.', created_at: new Date('Tue Nov 26 2019')},
-]
+const DiscussionOrContactItem = ({id, isOnline, lastMessage, createdAt, participant, isContact = false}) => {
+
+    const ThisLink = isContact ? Link : NavLink
+
+    return (
+        <ThisLink 
+            to={"/messages/talk/" + id} 
+            key={"section-list-item-" + id} 
+            className={Utils.setClassName("PageMessage-sidebar-section-content-list-item", {
+                "is-online": isOnline,
+                "is-contact": isContact,
+            })}
+        >
+            <div 
+                className={"PageMessage-sidebar-section-content-list-item-avatar"}
+            >
+                <div style={{
+                    backgroundImage: `url(${participant.avatar})`
+                }}/>
+            </div>
+            <div className="PageMessage-sidebar-section-content-list-item-body">
+                <div className="PageMessage-sidebar-section-content-list-item-body-info">
+                    <span className={Utils.setClassName("PageMessage-sidebar-section-content-list-item-body-name")}>{participant.username}</span>
+
+                    {createdAt && <span className="PageMessage-sidebar-section-content-list-item-body-date">{createdAt}</span>}
+                </div>
+                {lastMessage && (
+                    <p className="PageMessage-sidebar-section-content-list-item-body-text">{lastMessage.text}</p>
+                )}
+            </div>
+        </ThisLink>
+    ) 
+}
+
+const ContactItem = ({isOnline, contact, id}) => {
+    return (
+        <DiscussionOrContactItem
+            id={id}
+            isOnline={isOnline}
+            participant={contact}
+            isContact={true}
+        />
+    )
+}
+
+const DiscussionItem = ({id, isOnline, lastMessage, createdAt, participant}) => {
+
+    const {text, author = {avatar, username}} = lastMessage
+
+    return (
+        <DiscussionOrContactItem
+            id={id}
+            isOnline={isOnline}
+            participant={participant}
+            createdAt={createdAt}
+            lastMessage={lastMessage}
+        />
+    )
+}
 
 const MessageSidebar = () => {
 
     const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
-    const [loading, isLoading] = useState(true)
-    const [discussions, setDiscussions] = useState([])
+    // const [loading, isLoading] = useState(true)
+    // const [discussions, setDiscussions] = useState([])
 
     const requestChats = () => {
-
-        Utils.requestApi('discussions', {
-            body: {
-                token: appStore.token
-            }
-        }).then(response => {
-
-            if(response.body.error){
-                return
-            }
-
-            const chats = response.body.data.chats
-            setDiscussions(chats)
-            // appStoreDispatcher(setChats(response.body.data.chats))
-        })
+        return RequestData.getDiscussionsAndContacts(appStore.token)
     }
 
-    useEffect(requestChats, [])
-    useEffect(() => {
-        isLoading(discussions.length === 0)
-    }, [discussions])
+    const {isFetching, requestedData} = useRequestedData(requestChats)
 
     return (
         <div className="PageMessage-sidebar">
@@ -56,36 +93,46 @@ const MessageSidebar = () => {
                 <h3 className="PageMessage-sidebar-section-title">DIRECT</h3>
                 <div className="PageMessage-sidebar-section-content">
                     <div className="PageMessage-sidebar-section-content-list">
-                        { !loading && 
-                            discussions.map((discussionsItem, discussionsItemIndex) => {
+                        { !isFetching && 
+                            requestedData.chats.map((discussionsItem, discussionsItemIndex) => {
 
                                 const {id, lastMessage, participants} = discussionsItem
-                                const {text, createdAt, author: {avatar, username}} = lastMessage
-                                const createdAtText = Utils.getDiffDate(createdAt)
+                                const {createdAt: {text: createdAtText}} = lastMessage
 
                                 const isOnline = Math.random() > .4
 
                                 return (
-                                    <NavLink to={"/messages/c/" + id} key={"section-list-item-" + id} 
-                                    className={"PageMessage-sidebar-section-content-list-item" + (isOnline ? " online" : "")}>
-                                        {lastMessage && (
-                                            <React.Fragment>
-                                                <div 
-                                                    className={"PageMessage-sidebar-section-content-list-item-avatar"}
-                                                >
-                                                    <img src={participants[0].avatar} alt=""/>
-                                                </div>
-                                                <div className="PageMessage-sidebar-section-content-list-item-body">
-                                                    <div className="PageMessage-sidebar-section-content-list-item-body-info">
-                                                        <span className={"PageMessage-sidebar-section-content-list-item-body-name" + (isOnline ? " online" : "")}>{participants[0].username}</span>
+                                    <DiscussionItem 
+                                        key={"discussion-item-" + discussionsItemIndex}
+                                        id={participants[0].id}
+                                        lastMessage={lastMessage}
+                                        createdAt={createdAtText}
+                                        isOnline={isOnline}
+                                        participant={participants[0]}
+                                    />
+                                )
+                            })
+                        }
+                    </div>
+                </div>
+            </div>
 
-                                                        <span className="PageMessage-sidebar-section-content-list-item-body-date">{createdAtText}</span>
-                                                    </div>
-                                                    <p className="PageMessage-sidebar-section-content-list-item-body-text">{text}</p>
-                                                </div>
-                                            </React.Fragment>
-                                        )}
-                                    </NavLink>
+            <div className="PageMessage-sidebar-section">
+                <h3 className="PageMessage-sidebar-section-title">CONTACTS</h3>
+                <div className="PageMessage-sidebar-section-content">
+                    <div className="PageMessage-sidebar-section-content-list">
+                        { !isFetching && 
+                            requestedData.contacts.map((contactsItem, contactsItemIndex) => {
+
+                                const isOnline = Math.random() > .4
+
+                                return (
+                                    <ContactItem 
+                                        key={"contact-item-" + contactsItemIndex}
+                                        isOnline={isOnline}
+                                        contact={contactsItem}
+                                        id={contactsItem.id}
+                                    />
                                 )
                             })
                         }

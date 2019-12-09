@@ -17,7 +17,8 @@ import PageHome from './pages/PageHome'
 
 
 const pagesWithNoHeader = [
-    '/login'
+    '/login',
+    '/'
 ]
 
 const App = () => {

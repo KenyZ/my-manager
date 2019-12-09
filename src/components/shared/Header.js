@@ -11,13 +11,25 @@ import {
     setUser
 } from '../../utils/Store/actions'
 import AppStorage from '../../utils/AppStorage'
-import Utils from '../../utils/Utils'
+import {useRequestedData} from '../shared/hooks'
+import RequestData from '../../utils/RequestData'
+
+const HeaderUserInfo = ({user}) => {
+
+    return (
+        <React.Fragment>
+            <div className="Header-avatar">
+                <img src={user.avatar} alt=""/>
+            </div>
+            <p className="Header-username">@{user.username}</p>
+        </React.Fragment>
+    )
+}
 
 const Header = () => {
 
     const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
     const history = useHistory()
-    const [loading, isLoading] = useState(true)
 
     const disconnect = () => {
 
@@ -26,40 +38,20 @@ const Header = () => {
         history.push('/')
     }
 
-    const requestUserInfo = () => {
-        Utils.requestApi('/user', {
-            body: {
-                token: appStore.token
-            }
-        }).then(response => {
 
-            if(response.body.error){
-                return
-            }
-
-            appStoreDispatcher(setUser(response.body.data.user))
-        })
+    const fetchUserInfo = () => {
+        return RequestData.getUserInfo(appStore.token)
     }
 
-    useEffect(requestUserInfo, [])
-    useEffect(() => {
-        isLoading(appStore.user === null)
-    }, [appStore.user])
-
-    const HeaderUserInfo = () => {
-        return (
-            <React.Fragment>
-                <div className="Header-avatar">
-                    <img src={appStore.user.avatar} alt=""/>
-                </div>
-                <p className="Header-username">@{appStore.user.username}</p>
-            </React.Fragment>
-        )
+    const receivedUserInfo = user => {
+        appStoreDispatcher(setUser(user))
     }
 
+    const {} = useRequestedData(fetchUserInfo, receivedUserInfo)
+    
     return (
-        <header className="Header">^
-            {!loading && <HeaderUserInfo/>}
+        <header className="Header">
+            {(appStore.user) && <HeaderUserInfo user={appStore.user}/>}
             <button onClick={disconnect} className="Header-logout">LOG OUT</button>
         </header>
     )

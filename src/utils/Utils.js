@@ -1,3 +1,5 @@
+import moment from 'moment'
+
 export const truncateText = (text, maxLength = 10) => text.substring(text, maxLength) + '...'
 
 export const requestApi = (action, {method = null, headers = {}, body = {}, ...rest}) => {
@@ -61,7 +63,7 @@ export const linkBy = (array, test) => {
 
 } 
 
-export const getDiffDate = dateFromDatabase => {
+export const getDate = dateFromDatabase => {
 
     const today = moment()
 
@@ -69,34 +71,51 @@ export const getDiffDate = dateFromDatabase => {
     // MUST GET A CORRECT DATE FORMAT FOR MOMENT
 
     let date = moment(dateFromDatabase)
+    let diffHours = date.diff(today, 'hours', true)
     let diffDays = date.diff(today, 'days')
     let diffYears = date.diff(today, 'years')
     let text = ""
 
-    if(diffYears <= -1){
+    if(diffYears <= -1){ // + 1ans
         text = date.format("MMM YYYY")
     } 
-    else if(diffDays <= -1){
-        if(diffDays <= -7){
+    else if(diffDays <= -1){ // + 1 jour
+        if(diffDays <= -7){  // + 7 jours
             text = date.format("DD MMM ")
         } 
-        else if(diffDays === -1){
+        else if(diffDays === -1){ // 1 day ago
             text =  "yesterday"
         }
         else {
-            text = date.format("dddd")
+            text = date.format("dddd")   
+        }
+
+    }
+    else { // - 24hours
+
+        if(today.day() !== date.day()){ // lasterday
+            text = "yesterday"
+        } else {
+            text = date.format("HH:mm")
         }
     }
-    else {
-        text = date.format("HH:mm")
-    }
 
-    return text
+    return {text, date}
 }
 
+export const setClassName = (defaultClassName, conditionalClassName = {}) => {
+    let className = defaultClassName
+
+    for(let key in conditionalClassName){
+        className += conditionalClassName[key] === true ? (" " + key) : ""
+    }
+
+    return className
+}
 export default {
     truncateText,
     linkBy,
     requestApi,
-    getDiffDate
+    getDate,
+    setClassName
 }

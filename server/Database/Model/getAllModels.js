@@ -6,6 +6,7 @@ module.exports = (DatabaseInstance, DataTypes) => {
         User: require('./UserModel'),
         Chat: require('./ChatModel'),
         Participant: require('./ParticipantModel'),
+        // Contact: require('./ContactModel'),
         Message: require('./MessageModel'),
     }
     
@@ -18,14 +19,18 @@ module.exports = (DatabaseInstance, DataTypes) => {
     const {User, Message, Chat, Participant} = models
 
     Message.belongsTo(User, {as: 'author'})
-    // Message.belongsTo(User, {as: 'target'})
     Message.belongsTo(Chat)
     
     Chat.Messages = Chat.hasMany(Message)
-    // Chat.hasMany(Participant, {as: 'participants'})
 
     Chat.User = Chat.belongsToMany(User, {through: Participant, as: 'participants'})
     User.Chat = User.belongsToMany(Chat, {through: Participant, as: 'discussions'})
 
+    // Chat.Participants = Chat.belongsToMany(User, {as: 'participants', through: 'Participants'})
+    // User.Discussions = User.belongsToMany(Chat, {as: 'discussions', through: 'Participants'})
+
+    User.Contacts = User.belongsToMany(User, {as: 'contacts', through: 'Contacts', foreignKey: 'selfId', otherKey: 'contactId'})
+    User.hasMany(Message)
+    
     return models
 }

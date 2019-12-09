@@ -1,53 +1,163 @@
 
 const Sequelize = require('sequelize')
 const notEqualOperator = Sequelize.Op.ne
+const containsOperator = Sequelize.Op.contains
+
+const ServerConstants = require('../../ServerConstants')
+const RepositoryHelper = require('./RepositoryHelper')
 
 module.exports = (database, models) => {
 
-    const {Chat, User, Message, Participant} = models
-
+    const {Chat, User, Message} = models
 
     return {
 
-        getChat: (chatId, thisUserId) => {
-                        
-            return Chat.findByPk(chatId, {
-                attributes: ['id'],
+        // test: () => {
+
+        //     const userId = 1
+
+        //     return User.findByPk(userId, {
+              
+        //         attributes: ['id'],
+
+        //         order: [
+        //             [{model: Chat, as: 'discussions'}, {model: Message}, 'createdAt', 'DESC']
+        //         ],
+
+        //         /// HERE HERE HERE HEREE
+
+        //         include: [
+        //             {
+        //                 model: Chat,
+        //                 as: 'discussions',
+        //                 subQuery: true,
+        //                 include: [
+        //                     {
+        //                         model: Message,
+        //                         attributes: ['id', 'text', 'createdAt'],
+        //                         limit: [1]
+        //                     }
+        //                     // {
+        //                     //     association: Chat.User,
+        //                     //     as: 'participants',
+
+        //                     // }
+        //                 ]
+        //             }
+        //         ]
+                
+        //     })
+        // },
+
+        getChat: (contactId, thisUserId) => {
+
+            return User.findByPk(contactId, {
+                attributes: ['id', 'username', 'avatar'],
                 order: [
-                    [Message, 'createdAt', 'ASC'],
+                    [{model: Chat, as: 'discussions'}, Message, 'createdAt', 'ASC']
                 ],
                 include: [
                     {
-                        model: Message,
-                        attributes: ['id', 'text', 'createdAt'],
+                        model: Chat,
+                        as: 'discussions',
+                        attributes: ['id'],
                         include: [
                             {
-                                model: User,
-                                as: 'author',
-                                attributes: ['id', 'username', 'avatar']
+                                association: Chat.User,
+                                as: 'participants',
+                                attributes: [],
+                                where: {
+                                    id: thisUserId
+                                }
+                            },
+
+                            {
+                                model: Message,
+                                attributes: ['id', 'text', 'createdAt'],
+                                include: [
+                                    {
+                                        model: User,
+                                        as: 'author',
+                                        attributes: ['id', 'username', 'avatar']
+                                    }
+                                ]
                             }
                         ]
-                    },
-                    {
-                        association: Chat.User,
-                        as: 'participants',
-                        attributes: ['id', 'avatar', 'username'],
-                        where: {id: {
-                            [notEqualOperator]: thisUserId
-                        }}
                     }
                 ]
+            }).then(user => {
+
+                const returnedData = {
+                    err: false,
+                    data: null
+                }
+
+                if(!user){
+                    returnedData.err = ServerConstants.API_ERROR.USER_NOT_FOUND
+                    return returnedData
+                }
+                
+                let _discussions = user.get('discussions')
+                const hasDiscussion = _discussions.length > 0
+                
+                returnedData.data = {                    
+                    chat: {
+                        hasDiscussion,
+                        id: hasDiscussion && _discussions[0].get('id'),
+                        messages: hasDiscussion ? _discussions[0].get('messages').map(m => RepositoryHelper.retrieveMessage(m)) : [],
+
+                        contact: {
+                            id: user.get('id'),
+                            username: user.get('username'),
+                            avatar: user.get('avatar'),
+                        },
+
+                    }
+                }
+
+
+                return returnedData
             })
         },
 
-        findAllDiscussionsOf: (userId = -1) => {
+        findDiscussionsAndContacts: (userId = -1) => {
 
+            const returnedData = {
+                err: false,
+                data: null
+            }
 
             return User.findByPk(userId, {
 
                 attributes: [],
 
+                order: [
+                    [User.Contacts, 'username', 'ASC'],
+                ],
+
                 include: [
+                    {
+                        association: User.Contacts,
+                        as: 'contacts',
+                        attributes: ['id', 'username', 'avatar'],
+                        include: [
+                            {
+                                model: Chat,
+                                as: 'discussions',
+                                attributes: ['id'],
+                                include: [
+                                    {
+                                        model: User,
+                                        as: 'participants',
+                                        attributes: [],
+                                        where: {
+                                            id: userId
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
                     {
                         model: Chat,
                         as: 'discussions',
@@ -64,12 +174,13 @@ module.exports = (database, models) => {
                                     id: {
                                         [notEqualOperator]: userId
                                     }
-                                }
+                                },
                             }
                         ]
                     }
                 ]
-            }).then(user => {
+            })
+            .then(user => {
                 if(!user){
                     return false
                 }
@@ -109,45 +220,23 @@ module.exports = (database, models) => {
                         
                         return {
                             id: d.get('id'),
-                            participants: d.get('participants'),
-                            lastMessage: lastMessage
+                            participants: d.get('participants').map(p => RepositoryHelper.retrieveUser(p)),
+                            lastMessage: lastMessage,
                         }
                     })  
 
-                    return gatherDiscussions
+                    returnedData.data = {
+                        chats: gatherDiscussions,
+                        contacts: user.get('contacts').map(c => RepositoryHelper.retrieveUser(c))
+                    }
+
+                    return returnedData
 
                 })
                 
             })
         },
 
-
-        test(){
-            return User.findByPk(1, {
-
-                // logging: console.log,
-
-                // order: [
-                //     [User.Chat, Message, 'createdAt', 'DESC']
-                // ],
-
-                // include: [
-                //     {
-                //         association: User.Chat,
-                //         separate: false,
-                //         as: 'discussions',
-                //         include: [
-                //             {
-                //                 model: Message,
-                //                 limit: 2,
-                //                 separate: true,
-                //             }
-                //         ]
-                //     }
-                // ]
-
-            })
-        }
     }
 
 }

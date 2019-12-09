@@ -43,8 +43,9 @@ const needAuth = async (req, res, next) => {
     const decodedToken = getTokenFromReq(req)
 
     if(decodedToken && decodedToken.id){
-        UserRepository.findById(decodedToken.id).then(user => {
+        UserRepository.findById(decodedToken.id, {attributes: ['id']}).then(user => {
             if(user){
+                req.token = decodedToken
                 return next()
             } else {
                 res.locals.response.error = ServerConstants.API_ERROR.MUST_BE_AUTH
@@ -64,47 +65,25 @@ const ChatRepository = require('../Database/Repository/ChatRepository')(database
 const MessageRepository = require('../Database/Repository/MessageRepository')(database, models)
 
 
-router.get('/test', async (req, res) => {
+router.post('/message/create', needAuth, async (req, res) => {
 
-    return ChatRepository.test().then(data => {
+    const decodedToken = req.token
+    const {contactId, message} = req.body
 
+    return MessageRepository.create(message.text, decodedToken.id, contactId).then(({err, data}) => {
+        res.locals.response.error = err
         res.locals.response.data = data
-        res.send(res.locals.response)
+        res.send(res.locals.response)    
     })
 
 })
 
-router.post('/message/create', async (req, res) => {
+router.post('/talk/:contactId', async (req, res) => {
 
     const decodedToken = getTokenFromReq(req)
-    const {chat: chatId, message} = req.body
-
-    if(decodedToken && decodedToken.id){
-        return MessageRepository.create(message.text, decodedToken.id, chatId).then(message => {
-            
-            if(!message){
-                res.locals.response.error = ServerConstants.API_ERROR.MUST_BE_AUTH
-                return
-            }
-
-            res.locals.response.data.message = message
-            res.send(res.locals.response)    
-        })
-    } else {
-        res.locals.response.error = ServerConstants.API_ERROR.MUST_BE_AUTH
-        // return res.send(res.locals.response)    
-    }  
-    
-    return res.send(res.locals.response)
-
-})
-
-router.post('/chat/:chatId', async (req, res) => {
-
-    const decodedToken = getTokenFromReq(req)
-
     // const decodedToken = {id: 1}
-    const chatId = req.params.chatId
+
+    const contactId = req.params.contactId
 
     if(decodedToken && decodedToken.id){
         return UserRepository.findById(decodedToken.id).then(user => {
@@ -114,8 +93,11 @@ router.post('/chat/:chatId', async (req, res) => {
                 return;
             }
 
-            return ChatRepository.getChat(chatId, decodedToken.id).then(chat => {
-                res.locals.response.data.chat = chat
+            return ChatRepository.getChat(contactId, decodedToken.id).then(({err, data}) => {
+
+                res.locals.response.error = err
+                res.locals.response.data = data
+                
                 res.send(res.locals.response)
             })
         })
@@ -127,16 +109,24 @@ router.post('/chat/:chatId', async (req, res) => {
     return res.send(res.locals.response) 
 })
 
-router.post('/discussions', async (req, res) => {
+// router.get('/test', async (req, res) => {
+
+//     return ChatRepository.test().then(data => {
+//         res.locals.response.data = data
+//         res.send(res.locals.response)
+//     })
+// })
+
+router.post('/discussions-contacts', async (req, res) => {
 
     const decodedToken = getTokenFromReq(req)
 
     // const decodedToken = {id: 1}
     
     if(decodedToken && decodedToken.id){
-        return ChatRepository.findAllDiscussionsOf(decodedToken.id).then(chats => {
-
-            res.locals.response.data.chats = chats
+        return ChatRepository.findDiscussionsAndContacts(decodedToken.id).then(({err, data}) => {
+            res.locals.response.error = err
+            res.locals.response.data = data
             res.send(res.locals.response)
         })
     } else {
