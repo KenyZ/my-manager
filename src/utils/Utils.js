@@ -3,7 +3,7 @@ import moment from 'moment'
 export const truncateText = (text, maxLength = 10) => text.substring(text, maxLength) + '...'
 
 export const requestApi = (action, {method = null, headers = {}, body = {}, ...rest}) => {
-    return fetch('http://localhost:3000/api/' + action, {
+    return fetch('/' + action, {
         method: method || 'POST',
         headers: {
             'Accept': 'application/json',
