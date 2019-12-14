@@ -1,19 +1,19 @@
 
 
 
-module.exports = (DatabaseInstance, DataTypes) => {
+module.exports = (sequelize, DataTypes) => {
     const modelFiles = {
-        User: require('./UserModel'),
-        Chat: require('./ChatModel'),
-        Participant: require('./ParticipantModel'),
+        User: require('./model.user'),
+        Chat: require('./model.chat'),
+        Participant: require('./model.participant'),
         // Contact: require('./ContactModel'),
-        Message: require('./MessageModel'),
+        Message: require('./model.message'),
     }
     
     const models = {}
     
     for(let modelName in modelFiles){
-        models[modelName] = modelFiles[modelName](DatabaseInstance, DataTypes)
+        models[modelName] = modelFiles[modelName](sequelize, DataTypes)
     }
 
     const {User, Message, Chat, Participant} = models

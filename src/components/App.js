@@ -4,40 +4,59 @@ import {
     Switch,
     Route,
     Redirect,
-    useLocation,
+    withRouter,
 } from 'react-router-dom'
+import {
+    connect
+} from 'react-redux'
 
 import '../style/style.scss'
+
 import PageMessage from './pages/message/PageMessage'
 import PageLogin from './pages/PageLogin'
-
 import ProtectedRoute from './shared/ProtectedRoute'
 import Header from './shared/Header'
 import PageHome from './pages/PageHome'
 
+class App extends React.Component{
 
-const pagesWithNoHeader = [
-    '/login',
-    '/'
-]
+    constructor(props){
+        super(props)
+    }
 
-const App = () => {
+    render(){
 
-    const location = useLocation()
+        const { location } = this.props
 
-    return (
-        <div className="App">
-
-            {!pagesWithNoHeader.includes(location.pathname) && <Header/>}
-
-            <Switch>
-                <Route exact path="/" component={PageHome}/>
-                <Route path="/login" component={PageLogin}/>
-                <ProtectedRoute path="/messages" component={PageMessage}/>
-                <Route path="*" render={() => <Redirect to="/"/>}/>
-            </Switch>
-        </div>
-    )
+        return (
+            <div className="App">
+    
+                {this.props.isAuthenticated && this.props.header && <Header/>}
+    
+                <Switch>
+                    <Route exact path="/" component={PageHome}/>
+                    <Route path="/login" component={PageLogin}/>
+                    <ProtectedRoute path="/messages" component={PageMessage}/>
+                    <Route path="*" render={() => <Redirect to="/"/>}/>
+                </Switch>
+            </div>
+        )
+    }
 }
 
-export default App
+const mapStateToProps = state => {
+    return {
+        header: state.header,
+        isAuthenticated: state.isAuthenticated,
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+
+        
+    }
+}
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(withRouter(App))

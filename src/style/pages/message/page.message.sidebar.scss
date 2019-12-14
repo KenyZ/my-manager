@@ -1,13 +1,15 @@
 .PageMessage{
 
+
     &-sidebar{
         width: 380px;
+        min-width: 380px;
         height: 100%;
         background: linear-gradient(to bottom, #2f267b, #59499e);
         padding-top: 30px;
         display: inline-block;
         overflow-y: auto;
-
+        position: relative;
         $sidebar-padding-left: 25px;
         
         &-section{
@@ -117,4 +119,5 @@
         }
 
     }
+
 }

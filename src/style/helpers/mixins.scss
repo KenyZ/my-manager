@@ -1,3 +1,26 @@
+
+// RESPONSIVES
+
+@mixin mobile{
+    @media screen and (max-width: 768px){
+        @content;
+    }
+}
+
+@mixin tablet{
+    @media screen and (max-width: 992px){
+        @content;
+    }
+}
+
+// OTHERS
+
+@mixin absolute{
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
 // COMPONENTS
 
 @mixin avatar($size: $avatar_size){

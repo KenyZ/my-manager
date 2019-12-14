@@ -1,8 +1,20 @@
 
 import Utils from './Utils'
 import moment from 'moment'
+import jwt from 'jsonwebtoken'
 
-window.moment = moment
+const RequestDataUtils = {
+    checkToken: async token => {
+
+        const decodedToken = jwt.decode(token)
+        
+        if(decodedToken && decodedToken.exp){
+            return !(decodedToken.exp < Date.now() / 1000) // isExpired
+        }
+
+        return false
+    }
+}
 
 const RequestData = {
 
@@ -85,6 +97,7 @@ const RequestData = {
                 })
             }
 
+
             return returnedData
         })
     },
@@ -116,6 +129,35 @@ const RequestData = {
 
             return message
         })
+    },
+
+
+    login(form){
+
+        return Utils.requestApi('login', {
+            body: form
+        })
+        .then(response => {
+
+            if(response.body.error){
+                console.log({a: response.body.error})
+                throw new Error(response.body.error)
+            }
+
+            if(response.body.data && response.body.data.token){
+                return response.body.data
+            } else {
+                return false
+            }
+        })
+    },
+
+    checkAuthentication(token){
+        return Utils.requestApi('authenticate', {
+            body: {
+                token
+            }
+        }).then(response => ( (response.body.data && response.body.data.access) && response.body.data.access) )
     }
 
 }

@@ -1,18 +1,12 @@
-import React, {
-    useContext,
-    useEffect,
-    useState
-} from 'react'
-import {useHistory} from 'react-router-dom'
+import React from 'react'
+import {withRouter} from 'react-router-dom'
+import { connect } from 'react-redux'
 
-import StoreContext from '../../utils/Store/StoreContext'
+import RequestData from '../../utils/RequestData'
 import {
     logOut,
     setUser
-} from '../../utils/Store/actions'
-import AppStorage from '../../utils/AppStorage'
-import {useRequestedData} from '../shared/hooks'
-import RequestData from '../../utils/RequestData'
+} from '../../store/actions/actions'
 
 const HeaderUserInfo = ({user}) => {
 
@@ -26,35 +20,65 @@ const HeaderUserInfo = ({user}) => {
     )
 }
 
-const Header = () => {
+class Header extends React.Component{
 
-    const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
-    const history = useHistory()
+    constructor(props){
+        super(props)
 
-    const disconnect = () => {
-
-        AppStorage.set('token', null)
-        appStoreDispatcher(logOut())
-        history.push('/')
+        this.state = {
+            user: {
+                loading: true,
+                data: null
+            }
+        }
+        this.disconnect = this.disconnect.bind(this)
+        this.fetchUserInfo = this.fetchUserInfo.bind(this)
     }
 
-
-    const fetchUserInfo = () => {
-        return RequestData.getUserInfo(appStore.token)
+    disconnect(){
+        this.props.logOut()
+        this.props.history.push('/')
     }
 
-    const receivedUserInfo = user => {
-        appStoreDispatcher(setUser(user))
+    fetchUserInfo(){
+
+        return RequestData.getUserInfo(this.props.accessToken).then(user => {
+
+            this.props.setUser(user)
+        })
     }
 
-    const {} = useRequestedData(fetchUserInfo, receivedUserInfo)
-    
-    return (
-        <header className="Header">
-            {(appStore.user) && <HeaderUserInfo user={appStore.user}/>}
-            <button onClick={disconnect} className="Header-logout">LOG OUT</button>
-        </header>
-    )
+    componentDidMount(){
+        this.fetchUserInfo()
+    }
+     
+    render(){
+
+        return (
+            <header className="Header">
+                {(this.props.user) && <HeaderUserInfo user={this.props.user}/>}
+                <button onClick={this.disconnect} className="Header-logout">LOG OUT</button>
+            </header>
+        ) 
+    }
 }
 
-export default Header
+const mapStateToProps = state => {
+    return {
+        accessToken: state.accessToken,
+        user: state.user
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        logOut: () => dispatch(logOut()),
+        setUser: user => dispatch(setUser(user))
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(
+    withRouter(
+        Header
+    )
+)

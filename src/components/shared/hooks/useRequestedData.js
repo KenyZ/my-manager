@@ -15,7 +15,10 @@ const useRequestedData = (request, receive, when = []) => {
         setShouldUpdate(!shouldUpdate)
     }, when)
 
+    console.log(shouldUpdate)
+    
     useEffect(() => {
+        console.log('will req')
         request().then(data => {
             setRequestedData(data)
             return data

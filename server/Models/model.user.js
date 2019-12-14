@@ -1,7 +1,7 @@
 
-module.exports = (DatabaseInstance, DataTypes) => {
+module.exports = (sequelize, DataTypes) => {
 
-    const UserModel = DatabaseInstance.define('user', {
+    const UserModel = sequelize.define('user', {
 
         username: {
             type: DataTypes.STRING,

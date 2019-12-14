@@ -1,52 +1,77 @@
-import React, {
-    useContext,
-    useState
-} from 'react'
+import React from 'react'
 import {
     Route,
     Redirect,
 } from 'react-router-dom'
+import { connect } from 'react-redux'
 
-import StoreContext from '../../utils/Store/StoreContext'
 import { requestApi } from '../../utils/Utils'
+import StorageManager from '../../utils/StorageManager'
+import {
+    updateIsAuthenticated
+} from '../../store/actions/actions'
+import RequestData from '../../utils/RequestData'
 
-const ProtectedRoute = ({component: Component, ...rest}) => {
+class ProtectedRoute extends React.Component{
+    constructor(props){
+        super(props)
 
-    const  {state: appStore} = useContext(StoreContext)
-    const [loading, setLoading] = useState(true)
-    const [auth, setAuth] = useState(false)
-
-    const token = appStore.token
-
-
-    requestApi('authenticate', {
-        body: {
-            token
+        this.state = {
+            loading: true,
+            auth: false
         }
-    }).then(response => {
+        this.tryToAuthenticate = this.tryToAuthenticate.bind(this)
+    }
 
-        if(response.body.error){
-            return
-        }
+    tryToAuthenticate(){
+        RequestData.checkAuthentication(this.props.accessToken).then(isAuthenticated => {
+            this.setState({
+                loading: false,
+                auth: isAuthenticated
+            })
 
-        setAuth(response.body.data.access)
-        setLoading(false)
-    })
+            this.props.updateIsAuthenticated(isAuthenticated)
+        })
+    }
 
-    if(loading){
-        return <Route {...rest} render={() => {
-            return <div>...loading</div>
-        }}/>
-    } else {
+    componentDidMount(){
+        this.tryToAuthenticate()
+    }
 
-        if(auth){
-            return <Route {...rest} component={Component} />
+    render(){
 
+        const {component: Component, ...rest} = this.props
+
+        if(this.state.loading){
+            return <Route {...rest} render={() => {
+                return <div>...loading</div>
+            }}/>
         } else {
-            return <Redirect to="/login" />
+    
+            if(this.state.auth){
+                return <Route {...rest} component={Component} />
+    
+            } else {
+                return <Redirect to="/login" />
+            }
         }
     }
 
 }
 
-export default ProtectedRoute
+
+const mapStateToProps = state => {
+    return {
+        accessToken: state.accessToken
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        updateIsAuthenticated: isAuthenticated => {
+            return dispatch(updateIsAuthenticated(isAuthenticated))
+        }
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(ProtectedRoute)

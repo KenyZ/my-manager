@@ -1,19 +1,15 @@
 
-import React, {
-    useState,
-    useEffect,
-    useContext
-} from 'react'
+import React from 'react'
 import {
     NavLink,
     Link
 } from 'react-router-dom'
 import moment from 'moment'
 
-import StoreContext from '../../../utils/Store/StoreContext'
 import Utils from '../../../utils/Utils'
 import RequestData from '../../../utils/RequestData'
-import {useRequestedData} from '../../shared/hooks'
+import StorageManager from '../../../utils/StorageManager'
+import { connect } from 'react-redux'
 
 const DiscussionOrContactItem = ({id, isOnline, lastMessage, createdAt, participant, isContact = false}) => {
 
@@ -75,72 +71,109 @@ const DiscussionItem = ({id, isOnline, lastMessage, createdAt, participant}) => 
     )
 }
 
-const MessageSidebar = () => {
+class MessageSidebar extends React.Component{
 
-    const {state: appStore, dispatch: appStoreDispatcher} = useContext(StoreContext)
-    // const [loading, isLoading] = useState(true)
-    // const [discussions, setDiscussions] = useState([])
+    constructor(props){
+        super(props)
 
-    const requestChats = () => {
-        return RequestData.getDiscussionsAndContacts(appStore.token)
+        this.state = {
+            chats: {
+                loading: true,
+                data: null
+            }
+        }
+
+        this.fetchChats = this.fetchChats.bind(this)
     }
 
-    const {isFetching, requestedData} = useRequestedData(requestChats)
+    fetchChats(){
+        return RequestData.getDiscussionsAndContacts(this.props.accessToken).then(chats => {
+            this.setState({
+                chats: {
+                    loading: false,
+                    data: chats
+                }
+            })
+        })
+    }
 
-    return (
-        <div className="PageMessage-sidebar">
-            <div className="PageMessage-sidebar-section">
-                <h3 className="PageMessage-sidebar-section-title">DIRECT</h3>
-                <div className="PageMessage-sidebar-section-content">
-                    <div className="PageMessage-sidebar-section-content-list">
-                        { !isFetching && 
-                            requestedData.chats.map((discussionsItem, discussionsItemIndex) => {
+    componentDidMount(){
+        this.fetchChats()
+    }
 
-                                const {id, lastMessage, participants} = discussionsItem
-                                const {createdAt: {text: createdAtText}} = lastMessage
+    render(){
 
-                                const isOnline = Math.random() > .4
+        const {loading: chatsLoading, data} = this.state.chats
+        const {chats = null, contacts = null} = data || {}
 
-                                return (
-                                    <DiscussionItem 
-                                        key={"discussion-item-" + discussionsItemIndex}
-                                        id={participants[0].id}
-                                        lastMessage={lastMessage}
-                                        createdAt={createdAtText}
-                                        isOnline={isOnline}
-                                        participant={participants[0]}
-                                    />
-                                )
-                            })
-                        }
+        return (
+            <div className="PageMessage-sidebar">
+                <div className="PageMessage-sidebar-opener">
+                    <button className="PageMessage-sidebar-opener__btn"></button>
+                </div>
+                <div className="PageMessage-sidebar-section">
+                    <h3 className="PageMessage-sidebar-section-title">DIRECT</h3>
+                    <div className="PageMessage-sidebar-section-content">
+                        <div className="PageMessage-sidebar-section-content-list">
+                            { !chatsLoading && 
+                                chats.map((discussionsItem, discussionsItemIndex) => {
+    
+                                    const {id, lastMessage, participants} = discussionsItem
+                                    const {createdAt: {text: createdAtText}} = lastMessage
+    
+                                    const isOnline = Math.random() > .4
+    
+                                    return (
+                                        <DiscussionItem 
+                                            key={"discussion-item-" + discussionsItemIndex}
+                                            id={participants[0].id}
+                                            lastMessage={lastMessage}
+                                            createdAt={createdAtText}
+                                            isOnline={isOnline}
+                                            participant={participants[0]}
+                                        />
+                                    )
+                                })
+                            }
+                        </div>
+                    </div>
+                </div>
+    
+                <div className="PageMessage-sidebar-section">
+                    <h3 className="PageMessage-sidebar-section-title">CONTACTS</h3>
+                    <div className="PageMessage-sidebar-section-content">
+                        <div className="PageMessage-sidebar-section-content-list">
+                            { !chatsLoading && 
+                                contacts.map((contactsItem, contactsItemIndex) => {
+    
+                                    const isOnline = Math.random() > .4
+    
+                                    return (
+                                        <ContactItem 
+                                            key={"contact-item-" + contactsItemIndex}
+                                            isOnline={isOnline}
+                                            contact={contactsItem}
+                                            id={contactsItem.id}
+                                        />
+                                    )
+                                })
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div className="PageMessage-sidebar-section">
-                <h3 className="PageMessage-sidebar-section-title">CONTACTS</h3>
-                <div className="PageMessage-sidebar-section-content">
-                    <div className="PageMessage-sidebar-section-content-list">
-                        { !isFetching && 
-                            requestedData.contacts.map((contactsItem, contactsItemIndex) => {
-
-                                const isOnline = Math.random() > .4
-
-                                return (
-                                    <ContactItem 
-                                        key={"contact-item-" + contactsItemIndex}
-                                        isOnline={isOnline}
-                                        contact={contactsItem}
-                                        id={contactsItem.id}
-                                    />
-                                )
-                            })
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+        )
+    }
 }
 
-export default MessageSidebar
+const mapStateToProps = state => {
+    return {
+        accessToken: state.accessToken
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(MessageSidebar)

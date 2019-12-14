@@ -1,6 +1,6 @@
-module.exports = (DatabaseInstance, DataTypes) => {
+module.exports = (sequelize, DataTypes) => {
 
-    const MessageModel = DatabaseInstance.define('message', {
+    const MessageModel = sequelize.define('message', {
 
         text: {
             type: DataTypes.STRING,

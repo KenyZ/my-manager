@@ -1,10 +1,15 @@
 const faker = require('faker')
 const moment = require('moment')
 
-const {database, models} = require('./sequelize')
+const {sequelize, models} = require('../sequelize')
+
+const USER_COUNT = 30
+const CONTACT_BY_USER_COUNT = 4
+const PERCENT_CHAT_BY_CONTACT = .4
+const MESSAGES_BY_CHAT_COUNT = 10
 
 
-if(database && models){
+if(sequelize && models){
 
     let action = feedDatabase
 
@@ -13,51 +18,6 @@ if(database && models){
 
         const {User, Chat, Message} = models
 
-
-
-        // return Promise.all([
-
-        //     User.bulkCreate([
-        //         {
-        //             username: 'harry',
-        //             password: 'houhou',
-        //             avatar: 'ggerge'
-        //         },
-        //         {
-        //             username: 'hehe',
-        //             password: 'houhou',
-        //             avatar: 'ggerge'
-        //         }
-        //     ]).then(users => {
-
-        //         console.log({
-        //             user: {
-        //                 a: users[0].getDiscussions,
-        //                 b: users[0].getDiscussion,
-        //                 c: users[0].getChat,
-        //                 d: users[0].getChats,
-        //             }
-        //         })
-    
-        //         return users[0].addContact(users[1]).then(() => {
-
-        //             return Chat.create({
-
-        //             }).then(chat => {
-        //                 return Promise.all([
-        //                     chat.setParticipants(users),
-        //                 ])
-        //             })
-
-        //         })
-    
-        //     }),
-
-
-
-        // ])
-
-
         console.log('### ALL ENDED ###')
         // process.exit(0)
     })
@@ -65,7 +25,7 @@ if(database && models){
 
 
 function syncDatabaseSchema(){
-    return database.sync({force: true}).then(() => {
+    return sequelize.sync({force: true}).then(() => {
         console.log('DATABASE SCHEMA HAS BEEN SYNCED')
     })
 }
@@ -170,6 +130,7 @@ const generateUniquePairs = (array, n) => {
     })
 }
 
+
 function feedDatabase(){
 
     const {User, Chat, Message} = models
@@ -179,7 +140,7 @@ function feedDatabase(){
         console.log('WILL FEED')
 
         return User.bulkCreate(
-            Array(50).fill(true).map(_ => {
+            Array(USER_COUNT).fill(true).map(_ => {
                 return {
                     username: faker.internet.userName(), 
                     password: '1234', 
@@ -191,7 +152,7 @@ function feedDatabase(){
             console.log('Users created ' + createdUsers.length)
 
 
-            const generatingPairs = generateUniquePairs(createdUsers, () => faker.random.number(10) + 1).then(generatedPairs => {
+            const generatingPairs = generateUniquePairs(createdUsers, CONTACT_BY_USER_COUNT).then(generatedPairs => {
 
                 const pairs = generatedPairs.map(([index0, index1]) => {
 
@@ -210,19 +171,20 @@ function feedDatabase(){
                 return Promise.all([
                     pairs.map(pairsItem => {
     
+                        const percentChatByUser = Math.random() < PERCENT_CHAT_BY_CONTACT
+
                         return Promise.all(
                             [
 
                                 pairsItem[0].addContact(pairsItem[1]),
                                 pairsItem[1].addContact(pairsItem[0]),
 
-                                (Math.random() > .3 && (Chat.create({}).then(createdChat => {
+
+                                (percentChatByUser && (Chat.create({}).then(createdChat => {
         
                                     return createdChat.setParticipants(pairsItem).then(() => {
-            
-                                        const nMessages = faker.random.number(30) + 1
-            
-                                        return Promise.all(Array(nMessages).fill(true).map((_, i) => {
+                        
+                                        return Promise.all(Array(MESSAGES_BY_CHAT_COUNT).fill(true).map((_, i) => {
             
                                             let index1 = Math.random() > .5 ? 1 : 0
                                             let author = pairsItem[index1]
@@ -240,7 +202,6 @@ function feedDatabase(){
             
                                                 return Promise.all([
                                                     createdMessage.setAuthor(author),
-                                                    // createdMessage.setTarget(target),
                                                     createdMessage.setChat(createdChat),
                                                 ])
             

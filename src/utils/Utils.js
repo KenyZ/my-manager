@@ -3,7 +3,7 @@ import moment from 'moment'
 export const truncateText = (text, maxLength = 10) => text.substring(text, maxLength) + '...'
 
 export const requestApi = (action, {method = null, headers = {}, body = {}, ...rest}) => {
-    return fetch('/' + action, {
+    return fetch('/api/' + action, {
         method: method || 'POST',
         headers: {
             'Accept': 'application/json',
@@ -112,6 +112,8 @@ export const setClassName = (defaultClassName, conditionalClassName = {}) => {
 
     return className
 }
+
+ 
 export default {
     truncateText,
     linkBy,

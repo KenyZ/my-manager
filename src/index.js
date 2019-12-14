@@ -3,17 +3,20 @@ import ReactDOM from 'react-dom'
 import {
     BrowserRouter
 } from 'react-router-dom'
+import {
+    Provider
+} from 'react-redux'
 
 import App from './components/App'
-import StoreProvider from './utils/Store/StoreProvider'
+import store from './store/store'
 
 ReactDOM.render(
     (
-        <BrowserRouter>
-            <StoreProvider>
+        <Provider store={store}>
+            <BrowserRouter>
                 <App/>
-            </StoreProvider>
-        </BrowserRouter>
+            </BrowserRouter>
+        </Provider>
     ),
     document.getElementById('root')
 )

@@ -4,34 +4,41 @@ import {
     Route,
     Switch,
     Redirect,
-    useRouteMatch
+    withRouter
 } from 'react-router-dom'
 
 import MessageSidebar from './MessageSidebar'
 import MessageChat from './MessageChat'
 
-const PageMessage = () => {
+class PageMessage extends React.Component{
 
-    const {path, url} = useRouteMatch()
+    constructor(props){
+        super(props)
+    }
     
-    return (
-        <div className="page PageMessage">
-            <MessageSidebar/>
-            <div className="PageMessage-content">
-                <Switch>
-                    <Route exact path={path}>
-                        <div className="PageMessage-home">
-                            <div className="welcome">
-                                <h1>Welcome !</h1>
+    render(){
+
+        const { path } = this.props.match
+
+        return (
+            <div className="page PageMessage">
+                <MessageSidebar/>
+                <div className="PageMessage-content">
+                    <Switch>
+                        <Route exact path={path}>
+                            <div className="PageMessage-home">
+                                <div className="welcome">
+                                    <h1>Welcome !</h1>
+                                </div>
                             </div>
-                        </div>
-                    </Route>
-                    <Route path={path + "/talk/:chat"} component={MessageChat}/>
-                    <Route path={path + "/*"} render={() => <Redirect to={path}/>}/>
-                </Switch>
+                        </Route>
+                        <Route path={path + "/talk/:chat"} component={MessageChat}/>
+                        <Route path={path + "/*"} render={() => <Redirect to={path}/>}/>
+                    </Switch>
+                </div>
             </div>
-        </div>
-    )
+        )
+    }
 }
 
-export default PageMessage
+export default withRouter(PageMessage)

@@ -3,7 +3,7 @@ const Sequelize = require('sequelize')
 const notEqualOperator = Sequelize.Op.ne
 const containsOperator = Sequelize.Op.contains
 
-const ServerConstants = require('../../ServerConstants')
+const ServerParameters = require('../utils/ServerParameters')
 const RepositoryHelper = require('./RepositoryHelper')
 
 module.exports = (database, models) => {
@@ -12,44 +12,85 @@ module.exports = (database, models) => {
 
     return {
 
-        // test: () => {
-
-        //     const userId = 1
-
-        //     return User.findByPk(userId, {
-              
-        //         attributes: ['id'],
-
-        //         order: [
-        //             [{model: Chat, as: 'discussions'}, {model: Message}, 'createdAt', 'DESC']
-        //         ],
-
-        //         /// HERE HERE HERE HEREE
-
-        //         include: [
-        //             {
-        //                 model: Chat,
-        //                 as: 'discussions',
-        //                 subQuery: true,
-        //                 include: [
-        //                     {
-        //                         model: Message,
-        //                         attributes: ['id', 'text', 'createdAt'],
-        //                         limit: [1]
-        //                     }
-        //                     // {
-        //                     //     association: Chat.User,
-        //                     //     as: 'participants',
-
-        //                     // }
-        //                 ]
-        //             }
-        //         ]
-                
-        //     })
-        // },
-
         getChat: (contactId, thisUserId) => {
+
+
+            return User.findByPk(contactId, {
+
+                include: [
+                    {
+                        association: User.Chat,
+                        as: 'discussions',
+                        attributes: ['id'],
+                        include: [
+                            {
+                                association: Chat.User,
+                                as: 'participants',
+                                attributes: [],
+                                where: {id: thisUserId}
+                            }
+                        ]
+                    }
+                ],
+
+
+            })
+            .then(user => {
+
+                if(!user){
+                    return {
+                        err: ServerParameters.API_ERROR.USER_NOT_FOUND,
+                        data: null
+                    }
+                }
+                
+                let _discussions = user.get('discussions')
+                const hasDiscussion = _discussions.length > 0
+
+                if(hasDiscussion){
+                    return Message.findAll({
+                        where: {chatId: _discussions[0].get('id')},
+                        limit: 20,
+                        order: [
+                            ['createdAt', 'ASC']
+                        ],
+                        attributes: ['id', 'text', 'createdAt'],
+                        include: [
+                            {
+                                model: User,
+                                as: 'author',
+                                attributes: ['id', 'username', 'avatar']
+                            }
+                        ]
+                    }).then(messages => ({user, messages, hasDiscussion}))
+                } else {
+                    return {user, messages: [], hasDiscussion}
+                }
+
+            })
+            .then(({user, messages, hasDiscussion}) => {
+
+                const returnedData = {
+                    err: false,
+                    data: null
+                }
+                
+                returnedData.data = {                    
+                    chat: {
+                        hasDiscussion,
+                        id: hasDiscussion && user.get('discussions')[0].get('id'),
+                        messages: messages.map(m => RepositoryHelper.retrieveMessage(m)),
+
+                        contact: {
+                            id: user.get('id'),
+                            username: user.get('username'),
+                            avatar: user.get('avatar'),
+                        },
+
+                    }
+                }
+                return returnedData
+            })
 
             return User.findByPk(contactId, {
                 attributes: ['id', 'username', 'avatar'],
@@ -93,7 +134,7 @@ module.exports = (database, models) => {
                 }
 
                 if(!user){
-                    returnedData.err = ServerConstants.API_ERROR.USER_NOT_FOUND
+                    returnedData.err = ServerParameters.API_ERROR.USER_NOT_FOUND
                     return returnedData
                 }
                 

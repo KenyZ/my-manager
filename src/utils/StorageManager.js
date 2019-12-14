@@ -1,7 +1,8 @@
 
 const APP_STORAGE_NAME = "my_manager_storage"
 
-function AppStorage(){
+import jwt from 'jsonwebtoken'
+function StorageManager(){
 
     if(!window.localStorage.getItem(APP_STORAGE_NAME)){
         window.localStorage.setItem(APP_STORAGE_NAME, JSON.stringify({}))
@@ -18,15 +19,10 @@ function AppStorage(){
     this.get = (key = null) => {
         let storage = _getStorage()
         return key ? storage[key] : storage
-    }
-
-    
+    }    
 
     return this
 
 }
 
-
-const instance = new AppStorage()
-
-export default instance
+export default new StorageManager()
