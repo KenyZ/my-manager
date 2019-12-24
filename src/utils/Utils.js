@@ -2,15 +2,15 @@ import moment from 'moment'
 
 export const truncateText = (text, maxLength = 10) => text.substring(text, maxLength) + '...'
 
-export const requestApi = (action, {method = null, headers = {}, body = {}, ...rest}) => {
-    return fetch('/api/' + action, {
-        method: method || 'POST',
+export const requestApi = (action, {method = "POST", headers = {}, body, ...rest}) => {
+    return fetch('/api' + action, {
+        method: method,
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             ...headers
         },
-        body: JSON.stringify(body),
+        body: body ? JSON.stringify(body) : undefined,
         ...rest
     })
     .then(response => {

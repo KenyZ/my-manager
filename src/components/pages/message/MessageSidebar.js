@@ -4,21 +4,24 @@ import {
     NavLink,
     Link
 } from 'react-router-dom'
-import moment from 'moment'
 
 import Utils from '../../../utils/Utils'
 import RequestData from '../../../utils/RequestData'
-import StorageManager from '../../../utils/StorageManager'
 import { connect } from 'react-redux'
+import {
+    setContacts,
+    setChats,
+} from '../../../store/actions/actions'
 
-const DiscussionOrContactItem = ({id, isOnline, lastMessage, createdAt, participant, isContact = false}) => {
+const DiscussionOrContactItem = ({contact, isOnline, lastMessage = null}) => {
 
-    const ThisLink = isContact ? Link : NavLink
+    const isContact = typeof lastMessage !== "undefined" ? false : true
+    const ComponentLink = isContact ? Link : NavLink
 
     return (
-        <ThisLink 
-            to={"/messages/talk/" + id} 
-            key={"section-list-item-" + id} 
+        <ComponentLink 
+            to={"/messages/talk/" + contact.id} 
+            key={"section-list-item-" + contact.id} 
             className={Utils.setClassName("PageMessage-sidebar-section-content-list-item", {
                 "is-online": isOnline,
                 "is-contact": isContact,
@@ -28,44 +31,36 @@ const DiscussionOrContactItem = ({id, isOnline, lastMessage, createdAt, particip
                 className={"PageMessage-sidebar-section-content-list-item-avatar"}
             >
                 <div style={{
-                    backgroundImage: `url(${participant.avatar})`
+                    backgroundImage: `url(${contact.avatar})`
                 }}/>
             </div>
             <div className="PageMessage-sidebar-section-content-list-item-body">
                 <div className="PageMessage-sidebar-section-content-list-item-body-info">
-                    <span className={Utils.setClassName("PageMessage-sidebar-section-content-list-item-body-name")}>{participant.username}</span>
-
-                    {createdAt && <span className="PageMessage-sidebar-section-content-list-item-body-date">{createdAt}</span>}
+                    <span className={Utils.setClassName("PageMessage-sidebar-section-content-list-item-body-name")}>{contact.username}</span>
+                    {lastMessage && <span className="PageMessage-sidebar-section-content-list-item-body-date">{lastMessage.createdAt.text}</span>}
                 </div>
-                {lastMessage && (
-                    <p className="PageMessage-sidebar-section-content-list-item-body-text">{lastMessage.text}</p>
-                )}
+                {lastMessage && <p className="PageMessage-sidebar-section-content-list-item-body-text">{lastMessage.text}</p>}
             </div>
-        </ThisLink>
-    ) 
+        </ComponentLink>
+    )
 }
 
-const ContactItem = ({isOnline, contact, id}) => {
+const ContactItem = ({isOnline, contact}) => {
+
     return (
         <DiscussionOrContactItem
-            id={id}
+            contact={contact}
             isOnline={isOnline}
-            participant={contact}
-            isContact={true}
         />
     )
 }
 
-const DiscussionItem = ({id, isOnline, lastMessage, createdAt, participant}) => {
-
-    const {text, author = {avatar, username}} = lastMessage
+const DiscussionItem = ({lastMessage, isOnline, contact}) => {
 
     return (
         <DiscussionOrContactItem
-            id={id}
+            contact={contact}
             isOnline={isOnline}
-            participant={participant}
-            createdAt={createdAt}
             lastMessage={lastMessage}
         />
     )
@@ -75,25 +70,14 @@ class MessageSidebar extends React.Component{
 
     constructor(props){
         super(props)
-
-        this.state = {
-            chats: {
-                loading: true,
-                data: null
-            }
-        }
-
         this.fetchChats = this.fetchChats.bind(this)
     }
 
     fetchChats(){
         return RequestData.getDiscussionsAndContacts(this.props.accessToken).then(chats => {
-            this.setState({
-                chats: {
-                    loading: false,
-                    data: chats
-                }
-            })
+            this.props.setContacts(chats.contacts)
+            this.props.setChats(chats.chats)
+            
         })
     }
 
@@ -103,8 +87,9 @@ class MessageSidebar extends React.Component{
 
     render(){
 
-        const {loading: chatsLoading, data} = this.state.chats
-        const {chats = null, contacts = null} = data || {}
+
+        const contacts = this.props.contacts
+        const chats = this.props.chats
 
         return (
             <div className="PageMessage-sidebar">
@@ -115,22 +100,22 @@ class MessageSidebar extends React.Component{
                     <h3 className="PageMessage-sidebar-section-title">DIRECT</h3>
                     <div className="PageMessage-sidebar-section-content">
                         <div className="PageMessage-sidebar-section-content-list">
-                            { !chatsLoading && 
+                            { chats && 
                                 chats.map((discussionsItem, discussionsItemIndex) => {
     
-                                    const {id, lastMessage, participants} = discussionsItem
-                                    const {createdAt: {text: createdAtText}} = lastMessage
+                                    const {id, chat, messages, participants} = discussionsItem
+                                    const lastMessage = messages[0]
     
                                     const isOnline = Math.random() > .4
+
+                                    console.log({p: participants, participants: participants[0]})
     
                                     return (
                                         <DiscussionItem 
                                             key={"discussion-item-" + discussionsItemIndex}
-                                            id={participants[0].id}
                                             lastMessage={lastMessage}
-                                            createdAt={createdAtText}
                                             isOnline={isOnline}
-                                            participant={participants[0]}
+                                            contact={participants[0]}
                                         />
                                     )
                                 })
@@ -143,7 +128,7 @@ class MessageSidebar extends React.Component{
                     <h3 className="PageMessage-sidebar-section-title">CONTACTS</h3>
                     <div className="PageMessage-sidebar-section-content">
                         <div className="PageMessage-sidebar-section-content-list">
-                            { !chatsLoading && 
+                            { contacts && 
                                 contacts.map((contactsItem, contactsItemIndex) => {
     
                                     const isOnline = Math.random() > .4
@@ -168,12 +153,17 @@ class MessageSidebar extends React.Component{
 
 const mapStateToProps = state => {
     return {
-        accessToken: state.accessToken
+        accessToken: state.accessToken,
+        contacts: state.contacts,
+        chats: state.chats,
     }
 }
 
 const mapDispatchToProps = dispatch => {
-    return {}
+    return {
+        setContacts: contacts => dispatch(setContacts(contacts)),
+        setChats: chats => dispatch(setChats(chats)),
+    }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MessageSidebar)

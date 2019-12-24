@@ -8,7 +8,7 @@
   "scripts": {
     "serve": "nodemon --exec babel-node --watch server server/server.js",
     "dev": "npx webpack",
-    "dumbdata": "node server/utils/dumbdata.js",
+    "seeder": "node server/seeder.js",
     "prod": "./node_modules/pm2/bin/pm2 start server/server.js"
   },
   "dependencies": {

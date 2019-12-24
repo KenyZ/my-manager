@@ -57,3 +57,28 @@ export const setUser = ({username, avatar}) => {
         avatar
     }
 }
+
+
+export const SET_CONTACTS = "SET_CONTACTS"
+export const setContacts = contacts => {
+    return {
+        type: SET_CONTACTS,
+        contacts
+    }
+}
+
+export const SET_CHATS = "SET_CHATS"
+export const setChats = chats => {
+    return {
+        type: SET_CHATS,
+        chats
+    }
+}
+
+export const SET_MESSAGES = "SET_MESSAGES"
+export const setMessages = messages => {
+    return {
+        type: SET_MESSAGES,
+        messages
+    }
+}

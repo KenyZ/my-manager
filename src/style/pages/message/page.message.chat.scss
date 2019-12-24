@@ -106,6 +106,7 @@
             overflow-y: auto;
             height: 100%;
             padding-top: 20px;
+            flex: 1 0 0; // wtf ????
 
             &-item_group{
                 margin-bottom: 25px;

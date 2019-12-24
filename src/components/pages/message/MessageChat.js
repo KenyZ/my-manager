@@ -132,7 +132,7 @@ class PageChat extends React.Component{
         const text = this.messageInputRef.current.value
         const chat = this.state.chat.data
 
-        RequestData.createMessage(StorageManager.get('access_token'), text, chat.contact.id).then(createdMessage => {
+        RequestData.createMessage(StorageManager.get('access_token'), text, chat.id).then(createdMessage => {
 
             this.messageInputRef.current.value = ""
 

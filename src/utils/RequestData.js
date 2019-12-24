@@ -19,9 +19,10 @@ const RequestDataUtils = {
 const RequestData = {
 
     getUserInfo(token){
-        return Utils.requestApi('user', {
-            body: {
-                token: token
+        return Utils.requestApi('/user?info=43', {
+            method: 'GET',
+            headers: {
+                'x-auth-token': token  
             }
         }).then(response => {
 
@@ -36,9 +37,10 @@ const RequestData = {
     },
 
     getDiscussionsAndContacts(token){
-        return Utils.requestApi('discussions-contacts', {
-            body: {
-                token: token
+        return Utils.requestApi('/user?chats&contacts', {
+            method: 'GET',
+            headers: {
+                'x-auth-token': token  
             }
         }).then(response => {
 
@@ -46,35 +48,36 @@ const RequestData = {
                 return
             }
 
-            const chats = response.body.data.chats.map(d => {
+            const chats = response.body.data.discussions.map(chat => {
 
                 return {
-                    ...d,
-                    lastMessage: {
-                        ...d.lastMessage,
-                        createdAt: Utils.getDate(d.lastMessage.createdAt),
-                    }
+                    ...chat,
+                    lastMessage: chat.last_message ? {
+                        ...chat.last_message,
+                        createdAt: Utils.getDate(chat.last_message.created_at),
+                    } : null
                 }
             })
-            .sort((a, b) => {
+            // .sort((a, b) => {
 
-                [a, b] = [a.lastMessage, b.lastMessage]
+            //     [a, b] = [a.lastMessage, b.lastMessage]
 
-                let diff = b.createdAt.date.diff(a.createdAt.date, 'days', true)
-                if(diff > 0) return 1
-                else if (diff < 0) return -1
-                else return 0
-            })
+            //     let diff = b.createdAt.date.diff(a.createdAt.date, 'days', true)
+            //     if(diff > 0) return 1
+            //     else if (diff < 0) return -1
+            //     else return 0
+            // })
 
             const contacts = response.body.data.contacts
             return {chats, contacts}
         })
     },
 
-    getChat(chatID, token){
-        return Utils.requestApi('talk/' + chatID, {
-            body: {
-                token: token
+    getChat(contactId, token){
+        return Utils.requestApi('/chat?contact_id=' + contactId, {
+            method: 'GET',
+            headers: {
+                'x-auth-token': token  
             }
         }).then(response => {
 
@@ -86,32 +89,36 @@ const RequestData = {
 
             if(returnedData && returnedData.messages){
 
-                const interlocutor = returnedData.contact
+                const interlocutor = returnedData.participants[0]
 
                 returnedData.messages = returnedData.messages.map(message => {
                     return {
                         ...message,
-                        createdAt: Utils.getDate(message.createdAt),
-                        isReceived: interlocutor.id === message.author.id
+                        createdAt: Utils.getDate(message.created_at),
+                        isReceived: interlocutor.id === message.author_id
                     }
                 })
             }
 
 
-            return returnedData
+            return {
+                ...returnedData,
+                contact: returnedData.participants[0]
+            }
         })
     },
 
 
-    createMessage(token, text, contactId){
+    createMessage(token, text, chatId){
 
-        return Utils.requestApi('message/create', {
+        return Utils.requestApi('/message', {
+            method: 'put',
+            headers: {
+                'x-auth-token': token  
+            },
             body: {
-                token: token,
-                message: {
-                    text
-                },
-                contactId: contactId
+                message_text: text,
+                chat_id: chatId
             }
         }).then(response => {
 
@@ -123,7 +130,7 @@ const RequestData = {
 
             message = {
                 ...message,
-                createdAt: Utils.getDate(message.createdAt),
+                createdAt: Utils.getDate(message.created_at),
                 isReceived: false
             }
 
@@ -134,7 +141,7 @@ const RequestData = {
 
     login(form){
 
-        return Utils.requestApi('login', {
+        return Utils.requestApi('/login', {
             body: form
         })
         .then(response => {
@@ -153,10 +160,11 @@ const RequestData = {
     },
 
     checkAuthentication(token){
-        return Utils.requestApi('authenticate', {
-            body: {
-                token
-            }
+        return Utils.requestApi('/authenticate', {
+            method: 'GET',
+            headers: {
+                'x-auth-token': token  
+            },
         }).then(response => ( (response.body.data && response.body.data.access) && response.body.data.access) )
     }
 

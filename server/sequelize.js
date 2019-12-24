@@ -1,7 +1,10 @@
-require('dotenv').config()
+
+if(typeof process.env.MODE === "undefined"){
+  require('dotenv').config()
+}
+
 
 const Sequelize = require('sequelize')
-const DataTypes = Sequelize.DataTypes
 const sequelize = new Sequelize(
   
   process.env.DB_NAME, 
@@ -13,20 +16,8 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: 'mysql',
-    logging: false
+    logging: false,
   } 
 )
 
-sequelize.authenticate()
-.catch(err => console.error("==== UNABLE TO CONNECT DATABASE ====", err))
-.then(() => console.log("==== DATABASE CONNECTED ===="))
-
-const models = require('./Models/model.index')(sequelize, DataTypes)
-
-module.exports = {
-    sequelize: sequelize,
-    models
-}
-
-//////////
-
+module.exports = sequelize

@@ -22,6 +22,8 @@ const initialState = hydrateStore({
 
     user: null,
 
+    contacts: []
+
 
 })
 
