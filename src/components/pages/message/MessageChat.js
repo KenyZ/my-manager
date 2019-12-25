@@ -89,7 +89,7 @@ class PageChat extends React.Component{
 
     fetchChat(){
         const { chat } = this.props.match.params
-        return RequestData.getChat(chat, StorageManager.get('access_token')).then(chat => {
+        return RequestData.getChat(chat).then(chat => {
             this.setState({
                 chat: {
                     loading: this.state.chat.loading,
@@ -132,7 +132,7 @@ class PageChat extends React.Component{
         const text = this.messageInputRef.current.value
         const chat = this.state.chat.data
 
-        RequestData.createMessage(StorageManager.get('access_token'), text, chat.id).then(createdMessage => {
+        RequestData.createMessage(text, chat.id).then(createdMessage => {
 
             this.messageInputRef.current.value = ""
 

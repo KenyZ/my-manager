@@ -2,7 +2,8 @@ import moment from 'moment'
 
 export const truncateText = (text, maxLength = 10) => text.substring(text, maxLength) + '...'
 
-export const requestApi = (action, {method = "POST", headers = {}, body, ...rest}) => {
+export const requestApi = (action
+, {method = "POST", headers = {}, body, ...rest}) => {
     return fetch('/api' + action, {
         method: method,
         headers: {
@@ -71,34 +72,28 @@ export const getDate = dateFromDatabase => {
     // MUST GET A CORRECT DATE FORMAT FOR MOMENT
 
     let date = moment(dateFromDatabase)
-    let diffHours = date.diff(today, 'hours', true)
-    let diffDays = date.diff(today, 'days')
-    let diffYears = date.diff(today, 'years')
+    let diffHours = Math.abs(date.diff(today, 'hours', true))
+    let diffDays = Math.abs(date.diff(today, 'days', true))
+    let diffYears = Math.abs(date.diff(today, 'years'))
     let text = ""
 
-    if(diffYears <= -1){ // + 1ans
-        text = date.format("MMM YYYY")
-    } 
-    else if(diffDays <= -1){ // + 1 jour
-        if(diffDays <= -7){  // + 7 jours
-            text = date.format("DD MMM ")
-        } 
-        else if(diffDays === -1){ // 1 day ago
-            text =  "yesterday"
-        }
-        else {
-            text = date.format("dddd")   
-        }
 
-    }
-    else { // - 24hours
-
-        if(today.day() !== date.day()){ // lasterday
-            text = "yesterday"
+    if(diffHours < 24){ // today 
+        if(today.day() !== date.day()){ // yesterday but in 24h
+            text = date.format("dddd HH:mm")
         } else {
             text = date.format("HH:mm")
         }
+    } 
+    else if(diffDays < 7){ // in week
+        text = date.format("DD dddd")
     }
+    else if(diffYears < 1){
+        text = date.format("DD MMM")
+    }
+    else {
+        text = date.format("DD MMM YYYY")
+    } 
 
     return {text, date}
 }

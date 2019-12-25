@@ -59,7 +59,7 @@ module.exports = (router, {
             )
         },
 
-        updateAPIResponse: (res, data, error) => {
+        updateAPIResponse: (res, data, error = false) => {
             res.locals.response.error = error
             if(data) {
                 res.locals.response.data = Object.assign({}, res.locals.response.data, data)
@@ -156,9 +156,9 @@ module.exports = (router, {
 
     router.get('/user/', async (req, res) => {
 
-        // const decodedToken = await Helpers.getTokenFromReq(req)
+        const decodedToken = await Helpers.getTokenFromReq(req)
 
-        const decodedToken = {id: 1}
+        // const decodedToken = {id: 1}
         
         if(decodedToken && decodedToken.id){
 
@@ -190,6 +190,11 @@ module.exports = (router, {
                 }
             }
 
+            if(typeof req.query.username !== "undefined"){
+                const foundUsers = await User.findByUsername(decodedToken.id, req.query.username || null)
+                Helpers.updateAPIResponse(res, {users: foundUsers}, false)
+            }
+
             return res.send(res.locals.response)
 
         } else {
@@ -201,8 +206,8 @@ module.exports = (router, {
     
     router.get('/chat', async (req, res) => {
 
-        // const decodedToken = await Helpers.getTokenFromReq(req)
-        const decodedToken = {id: 1}
+        const decodedToken = await Helpers.getTokenFromReq(req)
+        // const decodedToken = {id: 1}
 
         const contactId = req.query.contact_id
 
@@ -212,7 +217,7 @@ module.exports = (router, {
         }
 
         if(decodedToken && decodedToken.id){
-            let {data, error} = await User.getChat(decodedToken.id, contactId)
+            let {data, error} = await User.getChat(decodedToken.id, contactId, true)
             Helpers.updateAPIResponse(res, data, error)
             
         } else {
@@ -228,11 +233,28 @@ module.exports = (router, {
         const {chat_id, message_text} = req.body
 
         if(chat_id && message_text){
-            const {data, error} = await Message.createMessage(decodedToken.id, chat_id, message_text)
+            const {data, error} = await Message.createMessage(decodedToken.id, chat_id, message_text, undefined, true)
             Helpers.updateAPIResponse(res, data, error)            
         }
 
         return res.send(res.locals.response) 
+    })
+
+    router.put('/contact', Middleware.needAuth, async (req, res) => {
+
+        const decodedToken = req.token
+        // const decodedToken = {id: 1}
+        const newContactId = req.query.add
+
+        if(newContactId){
+            const addingContact = await User.addContact(decodedToken.id, newContactId)
+            Helpers.updateAPIResponse(res, {user: addingContact})
+        } else {
+            res.locals.response.error = ServerParameters.API_ERROR.INVALID_QUERY
+        }
+
+        return res.send(res.locals.response)
+
     })
 
 }

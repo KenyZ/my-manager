@@ -42,7 +42,7 @@ class Header extends React.Component{
 
     fetchUserInfo(){
 
-        return RequestData.getUserInfo(this.props.accessToken).then(user => {
+        return RequestData.getUserInfo().then(user => {
 
             this.props.setUser(user)
         })

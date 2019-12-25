@@ -6,7 +6,7 @@ import {
     LOG_OUT,
     SIGN_IN,
     SET_USER,
-    SET_CONTACTS,
+    SET_CONTACTS, ADD_CONTACT,
     SET_CHATS,
     SET_MESSAGES
 } from './actions/actions'
@@ -68,19 +68,23 @@ export default initialState => {
                 }
             }
 
+            case ADD_CONTACT: {
+                return {
+                    ...prevState,
+                    contacts: [
+                        ...prevState.contacts,
+                        action.contact
+                    ].sort((a, b) => a.username.localeCompare(b.username))
+                }
+            }
+
             case SET_CHATS: {
                 return {
                     ...prevState,
                     chats: (action.chats && action.chats instanceof Array ? action.chats : []).map(c => ({
                         id: c.id,
                         participants: c.participants,
-                        messages: c.lastMessage ? [{
-                            id: c.lastMessage.id,
-                            text: c.lastMessage.text,
-                            createdAt: c.lastMessage.id,
-                            author: c.lastMessage.author,
-                        }] : []
-
+                        messages: c.lastMessage ? [c.lastMessage] : []
                     }))
                 }
             }

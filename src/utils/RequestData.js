@@ -2,6 +2,8 @@
 import Utils from './Utils'
 import moment from 'moment'
 import jwt from 'jsonwebtoken'
+import xss from 'xss'
+import StorageManager from './StorageManager'
 
 const RequestDataUtils = {
     checkToken: async token => {
@@ -18,11 +20,11 @@ const RequestDataUtils = {
 
 const RequestData = {
 
-    getUserInfo(token){
+    getUserInfo(){
         return Utils.requestApi('/user?info=43', {
             method: 'GET',
             headers: {
-                'x-auth-token': token  
+                'x-auth-token': StorageManager.get('access_token')  
             }
         }).then(response => {
 
@@ -36,11 +38,11 @@ const RequestData = {
         })
     },
 
-    getDiscussionsAndContacts(token){
+    getDiscussionsAndContacts(){
         return Utils.requestApi('/user?chats&contacts', {
             method: 'GET',
             headers: {
-                'x-auth-token': token  
+                'x-auth-token': StorageManager.get('access_token')  
             }
         }).then(response => {
 
@@ -48,7 +50,7 @@ const RequestData = {
                 return
             }
 
-            const chats = response.body.data.discussions.map(chat => {
+            let chats = response.body.data.discussions.map(chat => {
 
                 return {
                     ...chat,
@@ -57,6 +59,10 @@ const RequestData = {
                         createdAt: Utils.getDate(chat.last_message.created_at),
                     } : null
                 }
+            })
+            .sort((a, b) => {
+
+                return (!a.lastMessage || !b.lastMessage) ? 0 :  b.lastMessage.createdAt.date.diff(a.lastMessage.createdAt.date)
             })
             // .sort((a, b) => {
 
@@ -73,11 +79,11 @@ const RequestData = {
         })
     },
 
-    getChat(contactId, token){
+    getChat(contactId){
         return Utils.requestApi('/chat?contact_id=' + contactId, {
             method: 'GET',
             headers: {
-                'x-auth-token': token  
+                'x-auth-token': StorageManager.get('access_token')  
             }
         }).then(response => {
 
@@ -91,7 +97,8 @@ const RequestData = {
 
                 const interlocutor = returnedData.participants[0]
 
-                returnedData.messages = returnedData.messages.map(message => {
+                returnedData.messages = returnedData.messages.reverse().map(message => {
+
                     return {
                         ...message,
                         createdAt: Utils.getDate(message.created_at),
@@ -109,12 +116,12 @@ const RequestData = {
     },
 
 
-    createMessage(token, text, chatId){
+    createMessage(text, chatId){
 
         return Utils.requestApi('/message', {
             method: 'put',
             headers: {
-                'x-auth-token': token  
+                'x-auth-token': StorageManager.get('access_token')  
             },
             body: {
                 message_text: text,
@@ -159,13 +166,47 @@ const RequestData = {
         })
     },
 
-    checkAuthentication(token){
+    checkAuthentication(){
         return Utils.requestApi('/authenticate', {
             method: 'GET',
             headers: {
-                'x-auth-token': token  
+                'x-auth-token': StorageManager.get('access_token')  
             },
         }).then(response => ( (response.body.data && response.body.data.access) && response.body.data.access) )
+    },
+
+
+    findUsers(username){
+        return Utils.requestApi('/user?username=' + xss(username), {
+            method: 'GET',
+            headers: {
+                'x-auth-token': StorageManager.get('access_token')  
+            },
+        }).then(response => {
+            
+            if(response.body.error){
+                return
+            }
+
+            let foundUsers = response.body.data.users
+            return foundUsers
+        })
+    },
+
+    addNewContact(contactId){
+        return Utils.requestApi('/contact?add=' + xss(contactId), {
+            method: 'put',
+            headers: {
+                'x-auth-token': StorageManager.get('access_token')  
+            },
+        }).then(response => {
+            
+            if(response.body.error){
+                return null
+            }
+
+            return response.body.data.user
+        }) 
     }
 
 }

@@ -15,9 +15,9 @@ const {
 } = require('./database')
 
 
-const USERS_COUNT = 5
-const CONTACT_BY_USER = 3
-const MESSAGE_BY_CHAT = 150
+const USERS_COUNT = 30
+const CONTACT_BY_USER = 4
+const MESSAGE_BY_CHAT = 35
 
 
 const Utils = {

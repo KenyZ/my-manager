@@ -1,34 +1,189 @@
 .PageMessage{
 
+    $header-width: 380px;
+    $sidebar-padding-left: 25px;
 
     &-sidebar{
-        width: 380px;
-        min-width: 380px;
+        width: $header-width;
+        min-width: $header-width;
         height: 100%;
         background: linear-gradient(to bottom, #2f267b, #59499e);
-        padding-top: 30px;
         display: inline-block;
         overflow-y: auto;
         position: relative;
-        $sidebar-padding-left: 25px;
+        display: flex;
+        flex-direction: column;
+
+
+        &-nav{
+            display: flex;
+            border-bottom: 1px solid #00000033;
+            margin-bottom: 20px;
+
+            &-btn{
+
+                &.active{
+                    background-color: #00000055;
+
+                }
+
+                button{
+                    color: #fff;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    font-weight: 500;
+                    outline: none;
+                    padding: 10px $sidebar-padding-left;
+
+                    &:hover{
+                        color: #aaa;
+
+                        svg{
+                            fill: #aaa
+                        }
+                    }
+
+                    svg{
+                        fill: #fff;
+                        width: 32px;
+                        margin-bottom: 3px;
+                    }
+                }
+                
+               
+            }
+        }
         
         &-section{
-            margin-bottom: 30px;
-
+            // margin-bottom: 30px;
+            height: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            
             &-last-child{
                 margin-bottom: 0;
+            }
+            
+            &-addContact{
+                width: calc(100% - #{$sidebar-padding-left} * 2);
+                margin: 0 auto;
+                margin-bottom: 20px;
+                position: relative;
+
+                &-list{
+                    background-color: #fff;
+                    position: absolute;
+                    left: 0;
+                    top: 100%;
+                    z-index: 1;
+                    width: 100%;
+                    max-height: 350px;
+                    overflow-y: auto;
+                    overflow-x: auto;
+
+                    &-item{
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                        padding: 10px 15px;
+
+                        &:hover{
+                            background-color: #00000022;
+                        }
+
+                        &-avatar{
+                            @include avatar(25px);
+                            margin-right: 10px;
+                        }
+
+                        &-username{
+                            color: #000;
+                            font-weight: 500;
+                            margin-right: 10px;
+                        }
+
+                        &-icon {
+                            line-height: 0;
+                            margin-left: auto;
+                            border: 2px solid $success;
+                            border-radius: 100%;
+
+                            svg{
+                                fill: $success;
+                                width: 14px;
+                            }
+                        }
+                    }
+                }
+
+                &-btn{
+                    height: 40px;
+                    width: 100%;
+                    background-color: #00000055;
+                    color: #fff;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    &:hover{
+                        background-color: #00000066;
+                    }
+
+                    svg{
+                        width: 18px;
+                        fill: #fff;
+                        margin-left: 5px;
+                    }
+                }
+
+                .mm__btn-close{
+                    position: absolute;
+                    right: 8px;
+                    top: 50%;
+                    transform: translate(0, -50%);
+                }
+
+                &-input{
+                    height: 40px;
+                    width: 100%;
+                    background-color: #00000055;
+                    color: #fff;
+                    font-weight: 400;
+                    padding: 0 15px;
+
+                    &::placeholder{
+                        color: #fff;
+                    }
+                }
             }
 
             &-title{
                 color: #fff;
-                margin-bottom: 10px;
+                margin-bottom: 25px;
                 padding-left: $sidebar-padding-left;
                 font-size: 14px;
                 font-weight: 600;
             }
 
             &-content{
+                overflow-y: auto;
+                max-height: 100%;
+                
                 &-list{
+
+
+                    &-letter{
+                        color: #fff;
+                        font-size: 14px;
+                        padding-left: 10px;
+                        text-align: left;
+                    }
+
                     &-item{
                         display: flex;
                         padding: 16px 0;

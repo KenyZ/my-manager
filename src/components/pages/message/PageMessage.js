@@ -32,7 +32,7 @@ class PageMessage extends React.Component{
                                 </div>
                             </div>
                         </Route>
-                        <Route path={path + "/talk/:chat"} component={MessageChat}/>
+                        <Route path={path + "/t/:chat"} component={MessageChat}/>
                         <Route path={path + "/*"} render={() => <Redirect to={path}/>}/>
                     </Switch>
                 </div>

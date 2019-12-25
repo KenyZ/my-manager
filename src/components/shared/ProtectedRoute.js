@@ -24,7 +24,7 @@ class ProtectedRoute extends React.Component{
     }
 
     tryToAuthenticate(){
-        RequestData.checkAuthentication(this.props.accessToken).then(isAuthenticated => {
+        RequestData.checkAuthentication().then(isAuthenticated => {
             this.setState({
                 loading: false,
                 auth: isAuthenticated

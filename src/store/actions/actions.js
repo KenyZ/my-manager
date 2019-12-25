@@ -67,6 +67,18 @@ export const setContacts = contacts => {
     }
 }
 
+export const ADD_CONTACT = "ADD_CONTACT"
+export const addContact = contact => {
+    console.log({
+        contact,
+        hey: 'yooo'
+    })
+    return {
+        type: ADD_CONTACT,
+        contact
+    }
+}
+
 export const SET_CHATS = "SET_CHATS"
 export const setChats = chats => {
     return {

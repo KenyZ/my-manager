@@ -103,11 +103,15 @@ module.exports = (sequelize, Datatypes) => {
             user = await this.findByPk(id, {
                 
                 attributes: [],
+
+                order: [
+                    ['contacts'/** just specify association ?? wtf ??? */, 'username', 'ASC']
+                ],
                 
                 include: [
                     {
                         association: 'contacts',
-                        attributes: ['id', 'username', 'avatar']
+                        attributes: ['id', 'username', 'avatar'],
                     },
                     {
                         attributes: ['id'],
@@ -119,7 +123,7 @@ module.exports = (sequelize, Datatypes) => {
                                 separate: true,
                                 limit: 1,
                                 order: [
-                                    ['created_at', 'ASC']
+                                    ['created_at', 'DESC']
                                 ],
                                 include: [
                                     {
@@ -165,11 +169,22 @@ module.exports = (sequelize, Datatypes) => {
         return user
     }
 
-    User.getChat = async function(selfId, contactId){
+    User.getChat = async function(selfId, contactId, safe = false){
 
         const response = {
             data: null,
             error: false
+        }
+
+        if(safe){
+
+            let contact = await this.findOne({where: {username: contactId}, attributes: ['id']})
+
+            if(!contact){
+                response.error = API_ERROR.INVALID_QUERY
+                return response
+            }
+
         }
 
         let userWithChat = null
@@ -188,7 +203,7 @@ module.exports = (sequelize, Datatypes) => {
                                 association: 'participants',
                                 attributes: ['id', 'username', 'avatar'],
                                 where: {
-                                    id: contactId
+                                    username: contactId
                                 }
                             },
                             {
@@ -197,7 +212,7 @@ module.exports = (sequelize, Datatypes) => {
                                 separate: true,
                                 limit: 50,
                                 order: [
-                                    ['created_at', 'ASC']
+                                    ['created_at', 'DESC']
                                 ],
                                 include: [
                                     {
@@ -233,13 +248,14 @@ module.exports = (sequelize, Datatypes) => {
                         text: messagesItem.text,
                         author: messagesItem.author,
                         author_id: messagesItem.author_id,
+                        created_at: messagesItem.created_at,
                     }))
                 }
             } 
             else { // NO DISCUSSION -> CREATE
 
                 const selfModel = await this.findByPk(selfId)
-                const contactModel = await this.findByPk(contactId)
+                const contactModel = await this.findOne({where: {username: contactId}, attributes: ['id']})
 
                 const createdChat = await Chat.createChat([
                     selfModel,
@@ -276,6 +292,57 @@ module.exports = (sequelize, Datatypes) => {
 
         return response
 
+    }
+
+    User.findByUsername = async function(selfId, username){
+
+        let users = []
+
+        try {
+
+            let selfContactsId = await (await this.findByPk(selfId, {attributes: ['id']})).getContacts().map(s => s.get('id'))
+
+            users = await this.findAll({
+                attributes: ['id', 'username', 'avatar'],
+                where: {
+                    username: {
+                        [Op.substring]: username,
+                    },
+                    id: {
+                        [Op.ne]: selfId,
+                        [Op.notIn]: selfContactsId
+                    }
+                },
+                // limit: 10,
+                order: [
+                    ['username', 'ASC']
+                ]
+            })
+        } catch (FindUserByUsernameError) {
+            console.log({FindUserByUsernameError})
+        }
+
+        return users
+    }
+
+    User.addContact = async function(selfId, contactId){
+
+        try {
+
+            let self = await this.findByPk(selfId, {attributes: ['id']})
+            let contact = await this.findByPk(contactId, {attributes: ['id', 'username', 'avatar']})
+
+            if(self && contact){
+                newContact = await self.addContact(contact)
+                return contact
+            } else {
+                return null
+            }
+
+        } catch (UserAddNewContactError) {
+            console.log({UserAddNewContactError})
+            return null
+        }
     }
 
     return User

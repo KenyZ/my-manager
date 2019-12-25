@@ -1,6 +1,10 @@
 
 module.exports = (sequelize, Datatypes) => {
 
+    const User = sequelize.import('./User.js')
+    const Chat = sequelize.import('./Chat.js')
+    const {API_ERROR} = require('../utils/ServerParameters')
+
     const Message = sequelize.define('Message', {
         text: {
             type: Datatypes.STRING,
@@ -17,7 +21,7 @@ module.exports = (sequelize, Datatypes) => {
         }
     })
 
-    Message.createMessage = async function(author_id, chat_id, text, createdAt = undefined){
+    Message.createMessage = async function(author_id, chat_id, text, createdAt = undefined, safe = false){
         
         const response = {
             data: null,
@@ -25,6 +29,17 @@ module.exports = (sequelize, Datatypes) => {
         }
 
         let message = null
+
+
+        if(safe){
+            let author = await User.findByPk(author_id, {attributes: ['id']})
+            let chat = await Chat.findByPk(chat_id, {attributes: ['id']})
+
+            if(!chat || !author){
+                response.error = API_ERROR.INVALID_QUERY
+                return response
+            }
+        }
         
         try {
             message = await this.create({
