@@ -28,6 +28,12 @@ module.exports = (sequelize, Datatypes) => {
             allowNull: false,
         },
 
+        is_connected: {
+            type: Datatypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        }
+
     }, {
         timestamps: false,
         tableName: 'users',
@@ -38,22 +44,35 @@ module.exports = (sequelize, Datatypes) => {
     })
 
 
-    User.createUser = async function(login, password, username, avatar){
+    const UserUtils = {
+        getUser(user){
+            return {
+                id: user.get('id'),
+                username: user.get('username'),
+                avatar: user.get('avatar'),
+                is_connected: user.get('is_connected'),
+            }
+        }
+    }
+
+
+    User.createUser = async function(login, password, username, avatar, is_connected = false){
         return this.create({
             login,
             password,
             username,
-            avatar
+            avatar,
+            is_connected
         })
     }
 
-    User.login = async function(username, password){
+    User.login = async function(login, password){
 
         let user = null
 
         try {
             user = await this.findOne({
-                where: {username, password}
+                where: {login, password}
             })
         } catch (UserLoginError) {
             console.log({UserLoginError})
@@ -68,7 +87,7 @@ module.exports = (sequelize, Datatypes) => {
 
         try {
             user = await this.findByPk(id, {
-                attributes: ['username', 'avatar']
+                attributes: ['username', 'avatar', 'id']
             })
 
             user = user.get()
@@ -111,7 +130,7 @@ module.exports = (sequelize, Datatypes) => {
                 include: [
                     {
                         association: 'contacts',
-                        attributes: ['id', 'username', 'avatar'],
+                        attributes: ['id', 'username', 'avatar', 'is_connected'],
                     },
                     {
                         attributes: ['id'],
@@ -128,13 +147,13 @@ module.exports = (sequelize, Datatypes) => {
                                 include: [
                                     {
                                         association: 'author',
-                                        attributes: ['id', 'username', 'avatar']
+                                        attributes: ['id', 'username', 'avatar', 'is_connected']
                                     }
                                 ]
                             },
                             {
                                 association: 'participants',
-                                attributes: ['id', 'username', 'avatar'],
+                                attributes: ['id', 'username', 'avatar', 'is_connected'],
                                 where: {
                                     id: {
                                         [Op.ne]: id
@@ -147,18 +166,11 @@ module.exports = (sequelize, Datatypes) => {
             })
 
             user = {
-                contacts: user.contacts.map(contactsItem => ({
-                    id: contactsItem.id,
-                    username: contactsItem.username,
-                    avatar: contactsItem.avatar,
-                })),
+                contacts: user.contacts.map(contactsItem => UserUtils.getUser(contactsItem)),
                 discussions: user.discussions.map(discussionsItem => ({
                     id: discussionsItem.id,
-                    participants: discussionsItem.participants.map(participantsItem => ({
-                        id: participantsItem.id,
-                        username: participantsItem.username,
-                        avatar: participantsItem.avatar,
-                    })),
+                    is_group: discussionsItem.participants.length > 1,
+                    participants: discussionsItem.participants.map(participantsItem => UserUtils.getUser(participantsItem)),
                     last_message: discussionsItem.messages && discussionsItem.messages.length > 0 ? discussionsItem.messages[0] : null
                 }))
             }
@@ -176,56 +188,110 @@ module.exports = (sequelize, Datatypes) => {
             error: false
         }
 
+
+        const chatId = /^\d+$/.test(contactId) ? contactId : false
+
+        /**
+         * 
+         * 
+         * !!!!!!!!
+         * CAN BE USERNAME OR CHAT ID
+         * !!!!!!
+         */
+
         if(safe){
+            if(chatId){
+                
+            } else {
+                let contact = await this.findOne({where: {username: contactId}, attributes: ['id']})
 
-            let contact = await this.findOne({where: {username: contactId}, attributes: ['id']})
-
-            if(!contact){
-                response.error = API_ERROR.INVALID_QUERY
-                return response
+                if(!contact){
+                    console.log("a")
+                    response.error = API_ERROR.USER_NOT_FOUND
+                    return response
+                }
             }
-
         }
 
         let userWithChat = null
         
         try {
-            userWithChat = await this.findByPk(selfId, {
+            if(chatId){ // get by chat id
+                userWithChat = await this.findByPk(selfId, {
                 
-                attributes: [],
-
-                include: [
-                    {
-                        association: 'discussions',
-                        attributes: ['id'],
-                        include: [
-                            {
-                                association: 'participants',
-                                attributes: ['id', 'username', 'avatar'],
-                                where: {
-                                    username: contactId
-                                }
+                    attributes: ["id", "username", "avatar"],
+    
+                    include: [
+                        {
+                            association: 'discussions',
+                            attributes: ['id'],
+                            required: false,
+                            where: {
+                                id: chatId
                             },
-                            {
-                                association: 'messages',
-                                attributes: ['id', 'text', 'created_at', 'author_id'],
-                                separate: true,
-                                limit: 50,
-                                order: [
-                                    ['created_at', 'DESC']
-                                ],
-                                include: [
-                                    {
-                                        association: 'author',
-                                        attributes: ['id', 'username', 'avatar']
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+                            include: [
+                                {
+                                    association: 'participants',
+                                    attributes: ['id', 'username', 'avatar']
+                                },
+                                {
+                                    association: 'messages',
+                                    attributes: ['id', 'text', 'created_at', 'author_id'],
+                                    separate: true,
+                                    limit: 50,
+                                    order: [
+                                        ['created_at', 'DESC']
+                                    ],
+                                    include: [
+                                        {
+                                            association: 'author',
+                                            attributes: ['id', 'username', 'avatar']
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                    
+                })
+            } else {
+                userWithChat = await this.findByPk(selfId, {
                 
-            })
+                    attributes: ["id", "username", "avatar"],
+    
+                    include: [
+                        {
+                            association: 'discussions',
+                            attributes: ['id'],
+                            include: [
+                                {
+                                    association: 'participants',
+                                    attributes: ['id', 'username', 'avatar'],
+                                    where: {
+                                        username: contactId
+                                    }
+                                },
+                                {
+                                    association: 'messages',
+                                    attributes: ['id', 'text', 'created_at', 'author_id'],
+                                    separate: true,
+                                    limit: 50,
+                                    order: [
+                                        ['created_at', 'DESC']
+                                    ],
+                                    include: [
+                                        {
+                                            association: 'author',
+                                            attributes: ['id', 'username', 'avatar']
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                    
+                })
+            }
 
             if(!userWithChat){ // USER DOES NOT EXISTS
                 response.error = API_ERROR.USER_NOT_FOUND
@@ -237,6 +303,11 @@ module.exports = (sequelize, Datatypes) => {
                 let _discussion = userWithChat.get('discussions')[0]
 
                 userWithChat = {
+                    self: {
+                        id: userWithChat.get('id'),
+                        username: userWithChat.get('username'),
+                        avatar: userWithChat.get('avatar'),
+                    },
                     id: _discussion.get('id'),
                     participants: _discussion.get('participants').map(participantsItem => ({
                         id: participantsItem.id,
@@ -254,17 +325,22 @@ module.exports = (sequelize, Datatypes) => {
             } 
             else { // NO DISCUSSION -> CREATE
 
-                const selfModel = await this.findByPk(selfId)
-                const contactModel = await this.findOne({where: {username: contactId}, attributes: ['id']})
+                if(chatId){
+                    response.error = API_ERROR.CHAT_NOT_FOUND
+                    return response                }
+                else { // dont create the chat if its get chat by chat id
+                    const selfModel = await this.findByPk(selfId)
+                    const contactModel = await this.findOne({where: {username: contactId}, attributes: ['id']})
 
-                const createdChat = await Chat.createChat([
-                    selfModel,
-                    contactModel
-                ])
+                    const createdChat = await Chat.createChat([
+                        selfModel,
+                        contactModel
+                    ])
 
-                const finallyChat = await User.getChat(selfId, contactId)
+                    const finallyChat = await User.getChat(selfId, contactId)
 
-                return finallyChat 
+                    return finallyChat 
+                }
             }
 
 
@@ -343,6 +419,48 @@ module.exports = (sequelize, Datatypes) => {
             console.log({UserAddNewContactError})
             return null
         }
+    }
+
+
+    User.setStatus = async function(selfId = null, status = false){
+        return this.update({
+            is_connected: status
+        }, {
+            where: {
+                id: selfId
+            }
+        })
+    }
+
+    User.fetchContacts = async function(selfId){
+        let selfWithContacts = null
+        
+        try {
+            selfWithContacts = this.findByPk(selfId, {
+
+                attributes: ['id'],
+
+                include: [{
+                    association: 'contacts',
+                    attributes: ['id'],
+                    where: {
+                        is_connected: true
+                    }
+                }]
+            })
+
+            selfWithContacts = selfWithContacts.get('contacts').map(contactsItems => {
+                return {
+                    id: contactsItems.get('id'),
+                }
+            })
+
+        } catch (TryFetchContactError) {
+            console.log({TryFetchContactError})
+        }
+
+        return selfWithContacts
+        
     }
 
     return User

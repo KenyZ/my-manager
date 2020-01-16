@@ -8,7 +8,10 @@ module.exports = {
         INVALID_QUERY: "INVALID_QUERY",
         UNHANDLED_ERROR: "UNHANDLED_ERROR",
 
+        CHAT_NOT_FOUND: "CHAT_NOT_FOUND",
 
+        INVALID_TOKEN: "INVALID_TOKEN",
+        
 
     },
 

@@ -193,8 +193,7 @@
                         transition: $ease $duration;
                         transition-property: background;
 
-                        &.is-online .PageMessage-sidebar-section-content-list-item-avatar > div,
-                        &.is-online .PageMessage-sidebar-section-content-list-item-avatar > img
+                        .PageMessage-sidebar-section-content-list-item-avatar > div.is-online
                         {
                             border: 2px solid $success;
                         }
@@ -225,9 +224,28 @@
                         }
 
                         &-avatar{
-                            @include avatar();
+                            @include avatar(50px);
                             margin-right: 15px;
                             position: relative;
+
+                            &.is-group{
+                                position: relative;
+                                
+                                & > div{
+                                    width: 50px * .66;
+                                    height: 50px * .66;
+                                    position: absolute;
+                                    left: 0;
+                                    bottom: 0;
+                                    z-index: 2;
+                                    border: 2px solid $light2;
+                                    
+                                    &:nth-child(2){
+                                        transform: translate(50%, -50%);
+                                        z-index: 1;
+                                    }
+                                }
+                            }
                         }
 
 

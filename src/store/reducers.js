@@ -1,15 +1,25 @@
 import {combineReducers} from 'redux'
 
-import {
-    UPDATE_IS_AUTHENTICATED,
-    TOGGLE_HEADER_STATE,
-    LOG_OUT,
-    SIGN_IN,
-    SET_USER,
-    SET_CONTACTS, ADD_CONTACT,
-    SET_CHATS,
-    SET_MESSAGES
-} from './actions/actions'
+import Utils from '../utils/Utils'
+import * as ActionTypes from './actions/actions.types'
+
+const StoreData = {
+    createChat: chat => ({
+        id: chat.id,
+        messages: chat.messages,
+        participants: chat.participants,
+        is_group: chat.participants.length > 1
+    }),
+
+    createMessage: (message, self) => {
+
+        return {
+            ...message,
+            createdAt: Utils.getDate(message.created_at),
+            isReceived: self.id !== message.author_id
+        }
+    }
+}
 
 export default initialState => {
 
@@ -17,21 +27,21 @@ export default initialState => {
 
         switch(action.type){
     
-            case UPDATE_IS_AUTHENTICATED: {
+            case ActionTypes.UPDATE_IS_AUTHENTICATED: {
                 return {
                     ...prevState,
                     isAuthenticated: action.isAuthenticated
                 }
             }
     
-            case TOGGLE_HEADER_STATE: {
+            case ActionTypes.TOGGLE_HEADER_STATE: {
                 return {
                     ...prevState,
                     header: action.headerState
                 }
             }
     
-            case LOG_OUT: {
+            case ActionTypes.LOG_OUT: {
                 return {
                     ...prevState,
                     isAuthenticated: false,
@@ -39,7 +49,7 @@ export default initialState => {
                 }
             }
     
-            case SIGN_IN: {
+            case ActionTypes.SIGN_IN: {
                 return {
                     ...prevState,
                     isAuthenticated: true,
@@ -47,28 +57,32 @@ export default initialState => {
                 }
             }
 
-            case SET_USER: {
+            case ActionTypes.SET_USER: {
                 return {
                     ...prevState,
-                    user: {
-                        username: action.username,
-                        avatar: action.avatar,
-                    },
+                    user: action.user,
                 }
             }
 
-            case SET_CONTACTS: {
-                return {
-                    ...prevState,
-                    contacts: (action.contacts && action.contacts instanceof Array ? action.contacts : []).map(c => ({
-                        id: c.id,
-                        username: c.username,
-                        avatar: c.avatar,
-                    }))
+            case ActionTypes.SET_CONTACTS: {
+
+                let nextState = {...prevState}
+
+                let contacts = (action.contacts && action.contacts instanceof Array ? action.contacts : [])
+
+                for(let i = 0; i < contacts.length; i++){
+                    let contactsItem = contacts[i]
+                    nextState.users[contactsItem.id] = {
+                        ...(nextState.users[contactsItem.id] || {}),
+                        ...contactsItem,
+                        is_contact: true
+                    }
                 }
+
+                return nextState
             }
 
-            case ADD_CONTACT: {
+            case ActionTypes.ADD_CONTACT: {
                 return {
                     ...prevState,
                     contacts: [
@@ -78,15 +92,68 @@ export default initialState => {
                 }
             }
 
-            case SET_CHATS: {
+            case ActionTypes.SET_CHATS: { // set for first time
                 return {
                     ...prevState,
-                    chats: (action.chats && action.chats instanceof Array ? action.chats : []).map(c => ({
-                        id: c.id,
-                        participants: c.participants,
-                        messages: c.lastMessage ? [c.lastMessage] : []
-                    }))
+                    chats: action.chats
                 }
+            }
+
+            case ActionTypes.SET_MESSAGES: {
+                return {
+                    ...prevState,
+                    messages: action.messages
+                }
+            }
+
+            case ActionTypes.SET_CHAT: {
+
+                let nextState = {...prevState}
+                let foundIndex = nextState.chats.findIndex(chat => chat.id === action.chat.id)
+
+                if(foundIndex !== -1){
+                    nextState.chats[foundIndex] = {
+                        ...nextState.chats[foundIndex],
+                        messages: action.chat.messages
+                    }
+                } else {
+                    nextState.chats.push(StoreData.createChat(action.chat))
+                }
+
+                return nextState
+            }
+
+            case ActionTypes.UPDATE_USER: {
+                
+                return {
+                    ...prevState,
+                    users: {
+                        ...prevState.user,
+                        [action.user_id]: {
+                            ...prevState.users[action.user_id],
+                            ...action.updatedData,
+                        }
+                    }
+                }
+            }
+
+            case ActionTypes.ADD_MESSAGE: {
+
+                let nextChats = [...prevState.chats]
+                let chatIndex = nextChats.findIndex(chat => chat.id === action.message.chat_id)
+
+                if(chatIndex !== -1){
+                    nextChats[chatIndex].messages = [
+                        ...nextChats[chatIndex].messages,
+                        StoreData.createMessage(action.message, prevState.user)
+                    ]
+                }
+                
+                return {
+                    ...prevState,
+                    chats: nextChats
+                }
+
             }
             
             default:

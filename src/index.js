@@ -10,13 +10,18 @@ import {
 import App from './components/App'
 import store from './store/store'
 
+import {ThemeProvider} from '@material-ui/core'
+import MaterialTheme from './utils/MaterialTheme'
+
 ReactDOM.render(
     (
-        <Provider store={store}>
-            <BrowserRouter>
-                <App/>
-            </BrowserRouter>
-        </Provider>
+        <ThemeProvider theme={MaterialTheme}>
+            <Provider store={store}>
+                <BrowserRouter>
+                        <App/>
+                </BrowserRouter>
+            </Provider>
+        </ThemeProvider>
     ),
     document.getElementById('root')
 )

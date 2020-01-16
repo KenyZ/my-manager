@@ -5,8 +5,6 @@ import {
 } from 'react-router-dom'
 import { connect } from 'react-redux'
 
-import { requestApi } from '../../utils/Utils'
-import StorageManager from '../../utils/StorageManager'
 import {
     updateIsAuthenticated
 } from '../../store/actions/actions'
@@ -66,12 +64,8 @@ const mapStateToProps = state => {
     }
 }
 
-const mapDispatchToProps = dispatch => {
-    return {
-        updateIsAuthenticated: isAuthenticated => {
-            return dispatch(updateIsAuthenticated(isAuthenticated))
-        }
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    updateIsAuthenticated: (...args) => dispatch(updateIsAuthenticated(...args)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(ProtectedRoute)

@@ -1,5 +1,5 @@
-import {createStore} from 'redux'
-
+import {createStore, applyMiddleware} from 'redux'
+import thunkMiddleware from 'redux-thunk'
 import reducers from './reducers'
 import StorageManager from '../utils/StorageManager'
 
@@ -22,12 +22,19 @@ const initialState = hydrateStore({
 
     user: null,
 
-    contacts: []
+    contacts: [],
+    
+    chats: [],
+
+    users: {}
 
 
 })
 
 export default createStore(
     reducers(initialState),
-    initialState
+    initialState,
+    applyMiddleware(
+        thunkMiddleware
+    ),
 )

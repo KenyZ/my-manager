@@ -8,7 +8,8 @@ import moment from 'moment'
 
 import Utils from '../../../utils/Utils'
 import RequestData from '../../../utils/RequestData'
-import StorageManager from '../../../utils/StorageManager'
+
+import { getChatAction} from '../../../store/actions/actions'
  
 const MessageGroup = ({group}) => {
     
@@ -71,124 +72,124 @@ class PageChat extends React.Component{
         super(props)
 
         this.state = {
-            chat: {
-                loading: true,
-                data: null
-            }
+            chatLoading: true,
+            chatId: null,
         }
 
         this.messagesListRef = React.createRef(null)
         this.messageInputRef = React.createRef(null)
 
-        this.fetchChat = this.fetchChat.bind(this)
         this.initListScroll = this.initListScroll.bind(this)
         this.getMessagesAsGroups = this.getMessagesAsGroups.bind(this)
-        this.sendMessage = this.sendMessage.bind(this)
+        this.retrieveUserFromStore = this.retrieveUserFromStore.bind(this)
         this.onChatChange = this.onChatChange.bind(this)
+        this.onSubmit = this.onSubmit.bind(this)
+        this.fetchChat = this.fetchChat.bind(this)
     }
 
-    fetchChat(){
-        const { chat } = this.props.match.params
-        return RequestData.getChat(chat).then(chat => {
-            this.setState({
-                chat: {
-                    loading: this.state.chat.loading,
-                    data: chat
-                }
-            })
-
-            this.initListScroll()
-        })
-    }
 
     initListScroll(){
 
-        if(this.messagesListRef.current){
+        if(this.messagesListRef.current){            
+
             const scroll = this.messagesListRef.current.scrollHeight - this.messagesListRef.current.offsetHeight
             this.messagesListRef.current.scrollTop = scroll + 10
         }
 
     }
 
-    getMessagesAsGroups(chat){
+    getMessagesAsGroups(messages = []){
 
-        if(chat.messages.length === 0){
-            return []
-        }
-
-        const organizedMessages = Utils.linkBy(chat.messages, (c, p) => {
+        return messages.length === 0 ? [] : Utils.linkBy(messages, (c, p) => {
 
             let diffMinutes = Math.abs(c.createdAt.date.diff(p.createdAt.date, 'minutes'))
             return c.isReceived === p.isReceived && diffMinutes < 15
         })
-
-        return organizedMessages
     }
 
-    sendMessage(event){
+    onSubmit(event){
 
         event.preventDefault()
 
         const text = this.messageInputRef.current.value
-        const chat = this.state.chat.data
 
-        RequestData.createMessage(text, chat.id).then(createdMessage => {
-
+        this.props.submitMessage(this.state.chatId, text).then(() => {
             this.messageInputRef.current.value = ""
-
-            if(createdMessage){
-
-                this.setState({
-                    chat: {
-                        loading: this.state.chat.loading,
-                        data: {
-                            ...chat,
-                            messages: [
-                                ...chat.messages,
-                                createdMessage
-                            ]
-                        }
-                    }
-                }, this.initListScroll)
-            }
+        }).catch(() => {
+            console.log("onSubmitFail")
         })
     }
 
     onChatChange(){
         this.setState({
-            chat: {
-                loading: true,
-                data: null
-            }
+            chatLoading: true
         }, this.fetchChat)
 
     }
     
     componentDidUpdate(prevProps){
 
-        const prevChat = prevProps.match.params.chat
-        const chat = this.props.match.params.chat
+
+        const prevChatId = prevProps.match.params.chat
+        const chatId = this.props.match.params.chat
+
+        if(prevProps.chats !== this.props.chats){
+            this.initListScroll()
+        }
         
-        if(prevChat !== chat){
+        if(prevChatId !== chatId){
             this.onChatChange()
         }
 
     }
 
-    componentDidMount(){
+    fetchChat(){
+        const { chat: chat_id } = this.props.match.params
+        this.props.getChatAction(chat_id).then(chat => {
+
+            this.setState({
+                chatLoading: false,
+                chatId: chat.id
+            })
+
+            this.initListScroll()
+
+            window.messages = this.props.chats.find(_chat => _chat.id === chat.id).messages
+        })
+        .catch(error => {
+            console.error({
+                FetchingChatError: error
+            })
+            this.props.history.push('/messages')
+        })
+    }
+
+    async componentDidMount(){
+
         this.fetchChat()
+    }
+
+    retrieveUserFromStore(user = null){
+
+        if(!user) return user;
+
+        if(typeof this.props.users[user.id] !== "undefined"){
+            return this.props.users[user.id]
+        } else {
+            return user
+        }
     }
 
     render(){
 
-        const {loading: chatLoading, data: chat} = this.state.chat
+        const chat = this.props.chats.find(chat => chat.id === this.state.chatId)
 
-        if(chatLoading && !chat){
+        if(this.state.chatLoading || !chat){
             return <div/>
         }
 
-        const interlocutor = chat.contact
-        const organizedMessages = this.getMessagesAsGroups(chat)
+        const interlocutor = this.retrieveUserFromStore(chat.participants[0])
+        const organizedMessages = this.getMessagesAsGroups(chat.messages)
 
         return (
             <div className="PageMessage-chat">
@@ -198,6 +199,11 @@ class PageChat extends React.Component{
                             <img src={interlocutor.avatar} alt=""/>
                         </div>
                         <h3>{interlocutor.username}</h3>
+                        <div className={Utils.setClassName("user-status", {
+                            "is-online": interlocutor.is_connected
+                        })}>
+                            <span></span>
+                        </div>
                     </div>
                     {organizedMessages.length === 0 && (
                         <div className="nomessages">
@@ -243,7 +249,7 @@ class PageChat extends React.Component{
                         )}
                 </div>
                         
-                <form onSubmit={this.sendMessage} className="PageMessage-chat-write">
+                <form onSubmit={this.onSubmit} className="PageMessage-chat-write">
                     <input ref={this.messageInputRef} className="typetext" type="text" placeholder="Type your message"/>
                     <button className="send" type="submit">SEND</button>
                 </form>
@@ -255,15 +261,15 @@ class PageChat extends React.Component{
 
 const mapStateToProps = state => {
     return {
-        user: state.user
+        user: state.user,
+        users: state.users,
+        chats: state.chats,
     }
 }
 
-const mapDispatchToProps = dispatch => {
-    return {
-
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    getChatAction: (...args) => dispatch(getChatAction(...args)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(
     withRouter(

@@ -6,10 +6,36 @@ import { connect } from 'react-redux'
 
 import Constants from '../../utils/Constants'
 import RequestData from '../../utils/RequestData'
-import StorageManager from '../../utils/StorageManager'
 import {
     signIn,
 } from '../../store/actions/actions'
+
+import MaterialStyles from '../../utils/MaterialStyles'
+
+/** Material UI */
+import {
+    TextField,
+    Button,
+    withStyles,
+    makeStyles,
+    FormControl,
+    Typography,
+    Checkbox,
+    FormControlLabel
+} from '@material-ui/core'
+
+
+const styles = {
+    btn_success: {
+        marginTop: 16
+    },
+
+    form_title: {
+        fontSize: 32,
+        textAlign: "center"
+    }
+}
+
 
 const LoginFormError = {
     [Constants.API_ERRORS.USER_NOT_FOUND]: 'Username or password is wrong.'
@@ -22,33 +48,35 @@ class PageLogin extends React.Component{
         super(props)
 
         this.state = {
-            formError: false
+            formError: false,
+            inputs: {
+                signin_rememberme: true
+            }
         }
-        this.submitForm = this.submitForm.bind(this)
-        this.form = React.createRef(null)
+
+        this.onSubmit = this.onSubmit.bind(this)
+        this.handleFormChange = this.handleFormChange.bind(this)
     }
 
-    submitForm(e){
+    onSubmit(e){
         e.preventDefault()
 
-        const form = this.form.current
-
-        const requestBody = {
-            username: form.username.value || "",
-            password: form.password.value || "",
+        const form = {
+            login: this.state.inputs.signin_login || "",
+            password: this.state.inputs.signin_password || "",
+            rememberme: this.state.inputs.signin_rememberme || "",
         }
 
-        const rememberme = form.rememberme.checked
-
-        RequestData.login(requestBody)
+        RequestData.login(form)
         .then(data => {
             if(data){
                   
-                this.props.signIn(data.token, rememberme)
+                this.props.signIn(data.token, form.rememberme)
                 this.props.history.push('/messages')
             }
         })
-        .catch(FormError => {
+            .catch(FormError => {
+                console.log({FormError})
             this.setState({
                 formError: LoginFormError[FormError] || 'An error has occured.'
             })
@@ -56,14 +84,97 @@ class PageLogin extends React.Component{
     }   
 
 
+    handleFormChange(event){
+        const {id, value, type, checked = false} = event.target
+
+        if(type && type === "checkbox"){
+
+            this.setState({
+                inputs: {
+                    ...this.state.inputs,
+                    [id]: checked
+                }
+            })
+        } else {
+            this.setState({
+                inputs: {
+                    ...this.state.inputs,
+                    [id]: value
+                }
+            })
+        }
+    }
+
+
     render(){
+
+        const {classes} = this.props
 
         return ( 
                 <div className="page PageLogin">
                     <div className="PageLogin-form">
                         <div className="PageLogin-logo">my-manager</div>
-                        <form ref={this.form} id="login_form" className="Form">
-                            <div className="PageLogin-form-title">Welcome !</div>
+                        <form id="login_form" className="Form">
+
+                            <Typography
+                                classes={{root: classes.form_title}}
+                            >
+                                Sign in
+                            </Typography>
+
+                            <TextField 
+                                id="signin_login" 
+                                label="Username"
+                                fullWidth={true}
+                                variant="outlined"
+                                size="small"
+                                margin="normal"
+                                required={true}
+                                onChange={this.handleFormChange}
+                                error={this.state.formError}
+                                helperText={this.state.formError}
+                                autoFocus={true}
+                            />
+
+                            <TextField 
+                                id="signin_password" 
+                                label="Password"
+                                fullWidth={true}
+                                variant="outlined"
+                                size="small"
+                                margin="normal"
+                                required={true}
+                                onChange={this.handleFormChange}
+                                error={this.state.formError}
+                                helperText={this.state.formError}
+                                type="password"
+                            />
+
+                            <FormControlLabel
+                                label="Remember me"
+                                control={
+                                    <Checkbox
+                                        id="signin_rememberme"
+                                        checked={this.state.inputs.signin_rememberme || false}
+                                        onChange={this.handleFormChange}
+                                        color="primary"
+                                        error={this.state.formError}
+                                    />
+                                }
+                            />
+
+                            <Button
+                                type="submit"
+                                color="primary"
+                                variant="contained"
+                                margin="normal"
+                                classes={{contained: classes.btn_success}}
+                                onClick={this.onSubmit}
+                                fullWidth={true}
+                            >
+                                Sign in
+                            </Button>
+                            {/* <div className="PageLogin-form-title">Welcome !</div>
         
                             {this.state.formError && (
                             <ul className="Form-errors">
@@ -85,7 +196,7 @@ class PageLogin extends React.Component{
                                 <input type="checkbox" name="rememberme" id="rememberme"/>
                             </div>
         
-                            <button onClick={this.submitForm} className="Form-btn-submit" type="submit">SIGN IN</button>
+                            <button onClick={this.submitForm} className="Form-btn-submit" type="submit">SIGN IN</button> */}
         
                         </form>
                     </div>
@@ -108,6 +219,6 @@ const mapDispatchToProps = dispatch => {
 
 export default connect(mapStateToProps, mapDispatchToProps)(
     withRouter(
-        PageLogin
+        withStyles(styles)(PageLogin)
     )
 )

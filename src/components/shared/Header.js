@@ -5,8 +5,22 @@ import { connect } from 'react-redux'
 import RequestData from '../../utils/RequestData'
 import {
     logOut,
-    setUser
+    getUserAction
 } from '../../store/actions/actions'
+
+// Material UI
+import {
+    Button,
+    withStyles,
+} from '@material-ui/core'
+import {red} from '@material-ui/core/colors'
+
+const styles = {
+    btn_logout: {
+        color: red[400],
+        marginLeft: "auto"
+    }
+}
 
 const HeaderUserInfo = ({user}) => {
 
@@ -32,7 +46,6 @@ class Header extends React.Component{
             }
         }
         this.disconnect = this.disconnect.bind(this)
-        this.fetchUserInfo = this.fetchUserInfo.bind(this)
     }
 
     disconnect(){
@@ -40,24 +53,24 @@ class Header extends React.Component{
         this.props.history.push('/')
     }
 
-    fetchUserInfo(){
-
-        return RequestData.getUserInfo().then(user => {
-
-            this.props.setUser(user)
-        })
-    }
-
     componentDidMount(){
-        this.fetchUserInfo()
+        this.props.getUserAction()
     }
      
     render(){
 
+        const {classes} = this.props
+
         return (
             <header className="Header">
                 {(this.props.user) && <HeaderUserInfo user={this.props.user}/>}
-                <button onClick={this.disconnect} className="Header-logout">LOG OUT</button>
+                <Button
+                    variant="text"
+                    classes={{root: classes.btn_logout}}
+                    onClick={this.disconnect}
+                >
+                    Log out
+                </Button>
             </header>
         ) 
     }
@@ -70,15 +83,13 @@ const mapStateToProps = state => {
     }
 }
 
-const mapDispatchToProps = dispatch => {
-    return {
-        logOut: () => dispatch(logOut()),
-        setUser: user => dispatch(setUser(user))
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    logOut: (...args) => dispatch(logOut(...args)),
+    getUserAction: (...args) => dispatch(getUserAction(...args)),
+})
 
 export default connect(mapStateToProps, mapDispatchToProps)(
     withRouter(
-        Header
+        withStyles(styles)(Header)
     )
 )

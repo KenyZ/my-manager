@@ -15,9 +15,11 @@ const {
 } = require('./database')
 
 
-const USERS_COUNT = 30
+const USERS_COUNT = 35
 const CONTACT_BY_USER = 4
-const MESSAGE_BY_CHAT = 35
+const MESSAGE_BY_CHAT = 25
+const USERS_IN_GROUP = 5
+const GROUP_COUNT = Math.round(USERS_COUNT / 10)
 
 
 const Utils = {
@@ -125,6 +127,19 @@ const Utils = {
 
     loop: (n, callback) => {
         return Array(n).fill(true).map(_ => callback(_))
+    },
+
+    randomArrayElemnts: (array, n) => {
+        let _array = [...array]
+
+        if(n >= array.length) return array
+
+        return Utils.loop(n, () => {
+            let randomIndex = faker.random.number(_array.length - 1)
+            let randomItem = _array[randomIndex]
+            _array.splice(randomIndex, 1)
+            return randomItem
+        })
     }
 }
 
@@ -144,7 +159,9 @@ const seeding = () => {
                 faker.internet.email(firstName, lastName),
                 '1234',
                 faker.internet.userName(firstName, lastName),
-                faker.internet.avatar()
+                faker.internet.avatar(),
+                Math.random() > .5
+            
             )
         })
 
@@ -229,13 +246,55 @@ const seeding = () => {
             })
         ).then(createdChats => {
             console.log('+ HAS CREATED CHATS ' + createdChats.length)
-            return createdChats
+            return users
         })
+    }
+
+    const creatingGroupChat = users => {
+        
+        return Promise.all(
+            Utils.loop(GROUP_COUNT, () => {
+
+                const participants = Utils.randomArrayElemnts(users, USERS_IN_GROUP)
+
+                return Chat.create().then(createdChat => {
+
+                    const randomMessageByChat = faker.random.number(MESSAGE_BY_CHAT) + 1
+
+
+                    return Promise.all([
+                        createdChat.setParticipants(participants),
+
+                        Promise.all(
+                            Utils.loop(randomMessageByChat, () => {
+    
+                                const author = faker.random.arrayElement(participants)
+    
+                                let randDays = faker.random.number(10) + 1
+                                let randHours = faker.random.number(23) + 1
+    
+                                let createdAt = moment().add(-randHours, 'hours').add(-randDays, 'days').format("YYYY-MM-DD HH:mm:ss")
+    
+    
+                                return Message.createMessage(
+                                    author.get('id'),
+                                    createdChat.get('id'),
+                                    faker.lorem.sentences(3),
+                                    createdAt
+                                )
+                            })
+                        ).then(({data: createdMessages}) => {
+                            console.log(`   + HAS CREATED ${createdMessages.length} MESSAGES FOR CHAT ${createdChat.get('id')}`)
+                        })
+                    ])
+                })
+            })
+        )
     }
 
 
 
-    return creatingUsers().then(creatingContact).then(creatingSingleChat)
+    return creatingUsers().then(creatingContact).then(creatingSingleChat).then(creatingGroupChat)
     
 }
 
@@ -245,4 +304,3 @@ sequelize.sync({force: true}).then(() => {
         process.exit(0)
     })
 })
-

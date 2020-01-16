@@ -53,7 +53,7 @@ module.exports = (sequelize, Datatypes) => {
             if(message){
 
                 let createdMessage = await this.findByPk(message.get('id'), {
-                    attributes: ['id', 'text', 'created_at', 'author_id'],
+                    attributes: ['id', 'text', 'created_at', 'author_id', 'chat_id'],
                     include: [
                         {
                             association: 'author',
@@ -62,9 +62,7 @@ module.exports = (sequelize, Datatypes) => {
                     ]
                 })
 
-                response.data = {
-                    message: createdMessage.get()
-                }
+                response.data = createdMessage.get()
 
             }
 

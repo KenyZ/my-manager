@@ -9,8 +9,14 @@ if(typeof process.env.MODE === "undefined"){
  */
 const express = require('express')
 const app = express()
+const server = require('http').Server(app)
 const RouterAPI = express.Router()
 const path = require('path') 
+
+
+const socketIO = require('socket.io')
+const io = socketIO(server)
+
 
 /**
  * MODULES
@@ -32,7 +38,7 @@ sequelize.authenticate().then(() => {
 
 // FOR API
 RouterAPI.use(express.json()) 
-routes(RouterAPI, {...models})
+routes(RouterAPI, {...models}, io)
 app.use('/api', RouterAPI)
 
 
@@ -44,7 +50,7 @@ app.get('/*', (req, res) => {
 })
 
 
-app.listen(PORT, () => console.log(`####  Server running on PORT=${PORT}, MODE=${process.env.MODE}  ####`))
+server.listen(PORT, () => console.log(`####  Server running on PORT=${PORT}, MODE=${process.env.MODE}  ####`))
 
 
 

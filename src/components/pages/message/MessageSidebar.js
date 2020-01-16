@@ -9,31 +9,81 @@ import Utils from '../../../utils/Utils'
 import RequestData from '../../../utils/RequestData'
 import { connect } from 'react-redux'
 import {
-    setContacts,
-    setChats,
+    getDiscussionsAndChatsAction,
     addContact
 } from '../../../store/actions/actions'
 
-const DiscussionOrContactItem = ({contact, isOnline, lastMessage}) => {
+
+// Material UI
+
+import {
+    Tabs,
+    Tab,
+    TabPanel,
+    withStyles
+} from '@material-ui/core'
+
+import {
+    ContactPhone,
+    ChatBubble,
+    People
+} from '@material-ui/icons'
+
+
+const styles = {
+
+    tab_label: {
+        color: "#fff",
+        fontWeight: 600
+    },
+
+    tab_indicator: {
+        background: "#fff"
+    },
+
+    tab_root: {
+        marginBottom: 25
+    }
+}
+
+const DiscussionOrContactItem = ({chatId = null, contacts = null, contact = contacts[0], isOnline, lastMessage}) => {
 
     const isContact = typeof lastMessage !== "undefined" ? false : true
     const ComponentLink = isContact ? Link : NavLink
 
+    const isGroup = contacts && contacts.length > 1
+
     return (
         <ComponentLink 
-            to={"/messages/t/" + contact.username} 
+            to={"/messages/t/" + (isGroup ? chatId : contact.username)} 
             key={"section-list-item-" + contact.id} 
             className={Utils.setClassName("PageMessage-sidebar-section-content-list-item", {
-                "is-online": isOnline,
                 "is-contact": isContact,
             })}
         >
             <div 
-                className={"PageMessage-sidebar-section-content-list-item-avatar"}
+                className={Utils.setClassName("PageMessage-sidebar-section-content-list-item-avatar", {
+                    "is-group": isGroup
+                })}
             >
-                <div style={{
-                    backgroundImage: `url(${contact.avatar})`
-                }}/>
+                <div 
+                    style={{
+                        backgroundImage: `url(${contact.avatar})`
+                    }}
+                    className={Utils.setClassName("", {
+                        "is-online": contact.is_connected,
+                    })}
+                />
+
+                {isGroup && contacts[1] && (
+                <div 
+                    style={{
+                        backgroundImage: `url(${contacts[1].avatar})`
+                    }}
+                    className={Utils.setClassName("", {
+                        "is-online": contacts[1].is_connected,
+                    })}
+                />)}
             </div>
             <div className="PageMessage-sidebar-section-content-list-item-body">
                 <div className="PageMessage-sidebar-section-content-list-item-body-info">
@@ -56,13 +106,14 @@ const ContactItem = ({isOnline, contact}) => {
     )
 }
 
-const DiscussionItem = ({lastMessage, isOnline, contact}) => {
+const DiscussionItem = ({lastMessage, isOnline, contacts, chatId = null}) => {
 
     return (
         <DiscussionOrContactItem
-            contact={contact}
+            contacts={contacts}
             isOnline={isOnline}
             lastMessage={lastMessage}
+            chatId={chatId}
         />
     )
 }
@@ -76,30 +127,24 @@ class MessageSidebar extends React.Component{
         this.TAB_DISCUSSIONS = "TAB_DISCUSSIONS"
         this.TAB_CONTACTS = "TAB_CONTACTS"
 
-        this.fetchChats = this.fetchChats.bind(this)
         this.toggleSidebarTab = this.toggleSidebarTab.bind(this)
         this.groupContactsByLetter = this.groupContactsByLetter.bind(this)
         this.handleSearchContact = this.handleSearchContact.bind(this)
         this.addNewContact = this.addNewContact.bind(this)
         this.closeSearchbar = this.closeSearchbar.bind(this)
+        this.onTabChange = this.onTabChange.bind(this)
+        this.retrieveUserFromStore = this.retrieveUserFromStore.bind(this)
 
         this.state = {
             tab: this.TAB_DISCUSSIONS,
+            tabIndex: 0,
             searchNewContact: true,
             foundUsers: null
         }
     }
 
-    fetchChats(){
-        return RequestData.getDiscussionsAndContacts().then(chats => {
-            this.props.setContacts(chats.contacts)
-            this.props.setChats(chats.chats)
-            
-        })
-    }
-
     componentDidMount(){
-        this.fetchChats()
+        this.props.getDiscussionsAndChatsAction()
     }
 
     toggleSidebarTab(type = this.TAB_DISCUSSIONS){
@@ -161,32 +206,45 @@ class MessageSidebar extends React.Component{
         }
     }
 
+    onTabChange(event, tab){
+        this.setState({tab})
+    }
+
+    retrieveUserFromStore(user = null){
+
+        if(!user) return user;
+
+        if(typeof this.props.users[user.id] !== "undefined"){
+            return this.props.users[user.id]
+        } else {
+            return user
+        }
+    }
+
     render(){
 
+        const {classes} = this.props
+
         const chats = this.props.chats
-        const groupedContacts = this.groupContactsByLetter(this.props.contacts)
+        const contacts = Object.values(this.props.users).filter(users => users.is_contact && users.is_contact === true)
+        const groupedContacts = this.groupContactsByLetter(contacts)
 
         return (
             <div className="PageMessage-sidebar">
-                <div className="PageMessage-sidebar-nav">
-                    <div className={Utils.setClassName("PageMessage-sidebar-nav-btn", {active: this.state.tab === this.TAB_DISCUSSIONS})}>
-                        <button 
-                            onClick={this.toggleSidebarTab(this.TAB_DISCUSSIONS)} 
-                            className="PageMessage-sidebar-nav-btn__btn">
-                            <svg viewBox="0 0 24 24"><path d="M17 12V3a1 1 0 00-1-1H3a1 1 0 00-1 1v14l4-4h10a1 1 0 001-1m4-6h-2v9H6v2a1 1 0 001 1h11l4 4V7a1 1 0 00-1-1z" /></svg>
-                            <span>Chats</span>
-                        </button>
-                    </div>
 
-                    <div className={Utils.setClassName("PageMessage-sidebar-nav-btn", {active: this.state.tab === this.TAB_CONTACTS})}>
-                        <button 
-                            onClick={this.toggleSidebarTab(this.TAB_CONTACTS)} 
-                            className="PageMessage-sidebar-nav-btn__btn">
-                            <svg viewBox="0 0 24 24"><path d="M6 17c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1H6m9-9a3 3 0 01-3 3 3 3 0 01-3-3 3 3 0 013-3 3 3 0 013 3M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2z" /></svg>
-                            <span>Contacts</span>
-                        </button>
-                    </div>
-                </div>
+                <Tabs
+                    value={this.state.tab}
+                    onChange={this.onTabChange}
+                    indicatorColor="primary"
+                    classes={{
+                        indicator: classes.tab_indicator,
+                        root: classes.tab_root
+                    }}
+                >
+                    <Tab value={this.TAB_DISCUSSIONS} icon={<ChatBubble/>} label="Chats" id="tab_chats" classes={{root: classes.tab_label}}/>
+                    <Tab value={this.TAB_CONTACTS} icon={<People/>} label="Contacts" id="tab_contacts" classes={{root: classes.tab_label}}/>
+                </Tabs>
+
                 {this.state.tab === this.TAB_DISCUSSIONS && <div className="PageMessage-sidebar-section PageMessage-sidebar-section__discussions">
                     <h3 className="PageMessage-sidebar-section-title">RECENT CONVERSATIONS</h3>
                     <div className="PageMessage-sidebar-section-content">
@@ -194,17 +252,18 @@ class MessageSidebar extends React.Component{
                             { chats && 
                                 chats.map((discussionsItem, discussionsItemIndex) => {
     
-                                    const {id, chat, messages, participants} = discussionsItem
-                                    const lastMessage = messages[0]
-    
+                                    const {id, chat, messages, participants, last_message} = discussionsItem    
                                     const isOnline = Math.random() > .4
+
+                                    const retrievedParticipants = participants.map(p => this.retrieveUserFromStore(p))
     
                                     return (
                                         <DiscussionItem 
                                             key={"discussion-item-" + discussionsItemIndex}
-                                            lastMessage={lastMessage}
+                                            lastMessage={last_message}
                                             isOnline={isOnline}
-                                            contact={participants[0]}
+                                            contacts={retrievedParticipants}
+                                            chatId={id}
                                         />
                                     )
                                 })
@@ -295,19 +354,19 @@ class MessageSidebar extends React.Component{
 }
 
 const mapStateToProps = state => {
+
     return {
         accessToken: state.accessToken,
-        contacts: state.contacts,
         chats: state.chats,
+        users: state.users,
     }
 }
 
-const mapDispatchToProps = dispatch => {
-    return {
-        setContacts: contacts => dispatch(setContacts(contacts)),
-        setChats: chats => dispatch(setChats(chats)),
-        addContact: contact => dispatch(addContact(contact))
-    }
-}
+const mapDispatchToProps = dispatch => ({
+    getDiscussionsAndChatsAction: (...args) => dispatch(getDiscussionsAndChatsAction(...args)),
+    addContact: (...args) => dispatch(addContact(...args))
+})
 
-export default connect(mapStateToProps, mapDispatchToProps)(MessageSidebar)
+export default connect(mapStateToProps, mapDispatchToProps)(
+    withStyles(styles)(MessageSidebar)
+)

@@ -18,6 +18,26 @@
                 @include avatar(40px);
                 margin-right: 15px;
             }
+
+            .user-status{
+                margin-left: auto;
+                padding: 0 5px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                &.is-online span{
+                    background: $success;
+                }
+
+                span{
+                    width: 8px;
+                    height: 8px;
+                    background: $light3;
+                    display: inline-block;
+                    border-radius: 100%;
+                }
+            }
         }
 
 

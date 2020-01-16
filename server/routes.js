@@ -1,12 +1,13 @@
 
 const jwt = require('jsonwebtoken')
 const ServerParameters = require('./utils/ServerParameters')
+const SocketServer = require('./socket.server')
 
 module.exports = (router, {
     User,
     Chat,
     Message
-}) => {
+}, io) => {
 
     /**
      * HELPERS
@@ -14,18 +15,32 @@ module.exports = (router, {
     const Helpers = {
 
         verifyToken: async token => {
-            let decodedToken = jwt.decode(token, process.env.API_SECRET) || null
 
-            if(decodedToken){
-                try {
-                    let verifiedToken = jwt.verify(token, process.env.API_SECRET)
-                } catch (VerifyTokenError) {
-                    // console.error({VerifyTokenError})
-                    return false
+            return new Promise((resolve, reject) => {
+
+                jwt.verify(token, process.env.API_SECRET, (err, decoded) => {
+                    resolve(err || decoded)
+                })
+            })
+
+        },
+
+        checkToken: async (req, res, next) => {
+
+            const retrievedToken = req.headers['x-auth-token']
+
+            if(retrievedToken){
+                const verifiedToken = await Helpers.verifyToken(retrievedToken)
+
+                if(verifiedToken){
+                    req.token = verifiedToken
+                    return next()
                 }
             } 
-
-            return decodedToken
+            
+            res.locals.response.error = ServerParameters.API_ERROR.INVALID_TOKEN
+            return res.send(res.locals.response)
+            
         },
 
         getTokenFromReq: async req => {
@@ -109,6 +124,21 @@ module.exports = (router, {
 
 
     /**
+     * Socket
+     */
+
+    const socketServer = SocketServer(
+        io,
+        {
+            User, Message, Chat
+        },
+        Helpers
+    )
+
+    socketServer.initSocketMessageServer()
+    
+
+    /**
      * ROUTES
      */
 
@@ -118,9 +148,9 @@ module.exports = (router, {
 
     router.post('/login', async (req, res) => {
 
-        const {username, password} = req.body
+        const {login, password} = req.body
 
-        let user = await User.login(username, password)
+        let user = await User.login(login, password)
         
         if(user && user.id){
             Helpers.updateAPIResponse(res, {
@@ -129,6 +159,10 @@ module.exports = (router, {
         } else {
             res.locals.response.error = ServerParameters.API_ERROR.USER_NOT_FOUND
         }
+
+        console.log({
+            createdToken: res.locals.response.token
+        })
 
         return res.send(res.locals.response)   
 
@@ -158,7 +192,7 @@ module.exports = (router, {
 
         const decodedToken = await Helpers.getTokenFromReq(req)
 
-        // const decodedToken = {id: 1}
+        // const decodedToken = {id: 2}
         
         if(decodedToken && decodedToken.id){
 
@@ -175,12 +209,11 @@ module.exports = (router, {
                 }
             }
 
-            if(typeof req.query.chats !== "undefined" && typeof req.query.contacts !== "undefined"){
+            if(typeof req.query.chats !== "undefined" && typeof req.query.contacts !== "undefined"){ // get chats and discussions
 
                 const chatsAndContacts = await User.getChatsAndContacts(decodedToken.id)
-
                 if(chatsAndContacts){
-                    Object.assign(res.locals.response.data, {
+                    Helpers.updateAPIResponse(res, {
                         discussions: chatsAndContacts.discussions,
                         contacts: chatsAndContacts.contacts
                     })
@@ -204,20 +237,20 @@ module.exports = (router, {
     })
 
     
-    router.get('/chat', async (req, res) => {
+    router.get('/chat/:related_id', async (req, res) => {
 
         const decodedToken = await Helpers.getTokenFromReq(req)
-        // const decodedToken = {id: 1}
+        // const decodedToken = {id: 2}
 
-        const contactId = req.query.contact_id
+        const relatedId = req.params.related_id
 
-        if(!contactId){
+        if(!relatedId){
             res.locals.response.error = ServerParameters.API_ERROR.INVALID_QUERY
             return res.send(res.locals.response)
         }
 
         if(decodedToken && decodedToken.id){
-            let {data, error} = await User.getChat(decodedToken.id, contactId, true)
+            let {data, error} = await User.getChat(decodedToken.id, relatedId, true)
             Helpers.updateAPIResponse(res, data, error)
             
         } else {
